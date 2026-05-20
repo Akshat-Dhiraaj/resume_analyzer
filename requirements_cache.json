@@ -1,0 +1,136 @@
+{
+  "JD- Full Stack Developer.pdf": {
+    "role_title": "MERN Stack Developer",
+    "seniority": "mid",
+    "min_years_experience": 3.0,
+    "required_skills": [
+      "MongoDB",
+      "Express.js",
+      "React.js",
+      "Node.js",
+      "JavaScript",
+      "HTML5",
+      "CSS3",
+      "RESTful APIs",
+      "Git",
+      "AWS",
+      "Docker",
+      "CI/CD"
+    ],
+    "nice_to_have_skills": [
+      "GraphQL",
+      "TypeScript",
+      "Agile",
+      "Scrum"
+    ],
+    "responsibilities": [
+      "Design, develop, and maintain high-performance web applications using MERN stack",
+      "Collaborate with cross-functional teams to define, design, and ship new features",
+      "Ensure the best possible performance, quality, and responsiveness of applications",
+      "Write clean, maintainable, and efficient code with a focus on scalability",
+      "Debug and resolve technical issues in the software applications",
+      "Participate in code reviews and contribute to the improvement of team coding standards",
+      "Work on both front-end and back-end parts of the application",
+      "Develop RESTful APIs to support front-end functionality",
+      "Implement security and data protection measures in the applications",
+      "Optimize applications for speed and scalability",
+      "Collaborate with DevOps for CI/CD pipeline automation and deployment processes"
+    ]
+  },
+  "JD-AI & Computer Vision Engineer (2 Years Experience) #U2013 Medical AI 1.pdf": {
+    "role_title": "AI Engineer",
+    "seniority": "mid",
+    "min_years_experience": 2.0,
+    "required_skills": [
+      "Python",
+      "PyTorch",
+      "CNNs",
+      "Transformers",
+      "Hugging Face Transformers",
+      "Machine Learning",
+      "Computer Vision",
+      "Deep Learning"
+    ],
+    "nice_to_have_skills": [
+      "DICOM",
+      "LangChain",
+      "FastAPI",
+      "Docker",
+      "RAG systems",
+      "Vector databases"
+    ],
+    "responsibilities": [
+      "Train and fine-tune deep learning models",
+      "Apply transfer learning using CNNs and Vision Transformers",
+      "Build RAG pipelines with embeddings and vector search",
+      "Implement agentic workflows using frameworks like LangChain",
+      "Develop and deploy inference APIs using FastAPI and Docker",
+      "Optimize model performance for GPU-based environments",
+      "Collaborate cross-functionally to deliver scalable AI solutions"
+    ]
+  },
+  "Job Description -QA Engineer.pdf": {
+    "role_title": "QA Engineer",
+    "seniority": "mid",
+    "min_years_experience": 3.0,
+    "required_skills": [
+      "Performance Testing",
+      "API Testing",
+      "Manual Testing",
+      "Test Automation",
+      "JMeter",
+      "Gatling",
+      "LoadRunner",
+      "Postman",
+      "REST Assured",
+      "Selenium",
+      "TestNG",
+      "Python",
+      "Java",
+      "Git"
+    ],
+    "nice_to_have_skills": [
+      "CI/CD pipelines",
+      "Jenkins",
+      "GitLab CI"
+    ],
+    "responsibilities": [
+      "Design, execute, and analyze performance and load tests",
+      "Validate backend services using API testing tools",
+      "Conduct exploratory, UI, and user acceptance testing",
+      "Develop automation scripts for functional and regression testing"
+    ]
+  },
+  "JD-AI & Computer Vision Engineer (2 Years Experience) \u2013 Medical AI 1.pdf": {
+    "role_title": "AI Engineer",
+    "seniority": "mid",
+    "min_years_experience": 2.0,
+    "required_skills": [
+      "Python",
+      "PyTorch",
+      "CNNs",
+      "Transformers",
+      "Hugging Face Transformers",
+      "Machine Learning",
+      "Computer Vision",
+      "Deep Learning"
+    ],
+    "nice_to_have_skills": [
+      "DICOM",
+      "LangChain",
+      "FastAPI",
+      "Docker",
+      "RAG systems",
+      "Vector databases"
+    ],
+    "responsibilities": [
+      "Train and fine-tune deep learning models",
+      "Apply transfer learning using CNNs and Vision Transformers",
+      "Build RAG pipelines with embeddings and vector search",
+      "Implement agentic workflows using frameworks like LangChain",
+      "Develop and deploy inference APIs using FastAPI and Docker",
+      "Optimize model performance for GPU-based environments",
+      "Collaborate cross-functionally to deliver scalable AI solutions"
+    ]
+  }
+}

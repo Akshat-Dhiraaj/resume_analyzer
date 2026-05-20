@@ -1,0 +1,1266 @@
+[
+  {
+    "resume": "Naukri_Sarthakkesarwani[3y_0m].pdf",
+    "target_role": "Full Stack / MERN Developer",
+    "elapsed_sec": 3.7,
+    "profile": {
+      "name": "Sarthak Kesarwani",
+      "email": "sarthakk179@gmail.com",
+      "work_history": [
+        {
+          "role": "Software Engineer",
+          "company": "IDEMIA",
+          "start_date": "Apr 2023",
+          "end_date": "Present",
+          "stack": [
+            "Java",
+            "Spring Boot",
+            "Spring Cloud",
+            "Node.js",
+            "Spring Boot",
+            "Spring Security",
+            "Hibernate",
+            "JPA",
+            "MySQL",
+            "RabbitMQ",
+            "Docker",
+            "Typescript",
+            "MongoDB"
+          ]
+        }
+      ],
+      "summary_claimed_years": 2.9,
+      "years_experience": 3.1,
+      "years_relevant_experience": 1.8,
+      "dates_extracted_ok": true,
+      "technical_skills": [
+        "Java",
+        "Advanced Java (J2EE)",
+        "JavaScript",
+        "Typescript",
+        "MySQL",
+        "MongoDB",
+        "Spring",
+        "Spring Boot",
+        "Spring MVC",
+        "Spring Actuator",
+        "Spring Security",
+        "Spring Cloud",
+        "Spring data",
+        "Hibernate",
+        "JPA",
+        "RabbitMQ",
+        "JUnit",
+        "Mockito",
+        "VS Code",
+        "IntelliJ",
+        "Maven",
+        "NPM",
+        "Git",
+        "GitHub",
+        "GitLab",
+        "Bitbucket",
+        "Postman",
+        "SOAP UI",
+        "WinSCP",
+        "Putty",
+        "JBOSS",
+        "Wildfly",
+        "Tomcat",
+        "HA proxy",
+        "Jenkins",
+        "SonarQube",
+        "GitLab CI",
+        "Bitbucket Pipelines",
+        "AWS",
+        "Node.js",
+        "Docker",
+        "Agile",
+        "Scrum",
+        "Python"
+      ],
+      "soft_skills": [],
+      "education": [
+        "Bachelor of Technology in Computer Science, KIET Group of Institutions, Ghaziabad, Uttar Pradesh, GPA: 8.6/10.0, Aug 2019 \u2013 Jun 2023"
+      ]
+    },
+    "assessment": {
+      "skills_match_score": 58,
+      "experience_match_score": 60,
+      "seniority_match_score": 85,
+      "matched_required": [
+        "MongoDB",
+        "Node.js",
+        "JavaScript",
+        "Git",
+        "AWS",
+        "Docker",
+        "CI/CD"
+      ],
+      "missing_required": [
+        "Express.js",
+        "React.js",
+        "HTML5",
+        "CSS3",
+        "RESTful APIs"
+      ],
+      "matched_nice_to_have": [
+        "TypeScript",
+        "Agile",
+        "Scrum"
+      ],
+      "strengths": [
+        "AWS",
+        "Agile",
+        "CI/CD",
+        "Docker",
+        "Git",
+        "JavaScript",
+        "MongoDB",
+        "Node.js",
+        "Scrum",
+        "TypeScript"
+      ],
+      "gaps": [
+        "Express.js",
+        "React.js",
+        "HTML5",
+        "CSS3",
+        "RESTful APIs"
+      ],
+      "rationale": "The candidate has a strong background in software development, with relevant experience in technologies such as MongoDB, Node.js, and JavaScript, but lacks experience in Express.js, React.js, HTML5, and CSS3. Their experience match score is 60, indicating a moderate level of alignment with the job requirements, and their seniority match score is 85, suggesting a good fit in terms of seniority level.",
+      "overall_score": 64
+    },
+    "suggestions": [
+      "Fill the gap in Express.js by adding a project that showcases your ability to build a RESTful API using Express.js. This will help demonstrate your understanding of the technology and improve your overall score.",
+      "Develop a React.js application to demonstrate your proficiency in building a user interface using React.js. This will help bridge the gap in this technology and improve your overall score.",
+      "Create a HTML5 and CSS3 project to demonstrate your understanding of front-end development and improve your overall score.",
+      "Quantify the impact of your AWS experience by adding metrics to your resume, such as the number of instances managed or the cost savings achieved. This will help demonstrate the value you can bring to the role.",
+      "Polish your resume by adding relevant keywords, such as 'Full Stack Development' and 'MERN Stack', to improve your visibility in applicant tracking systems (ATS)."
+    ]
+  },
+  {
+    "resume": "Naukri_ShivkumarVerma[3y_1m].pdf",
+    "target_role": "Full Stack / MERN Developer",
+    "elapsed_sec": 2.9,
+    "profile": {
+      "name": "Shiv Kumar Verma",
+      "email": "jztshiva@gmail.com",
+      "work_history": [
+        {
+          "role": "Product Engineer",
+          "company": "Coding Blocks",
+          "start_date": "Feb 2023",
+          "end_date": "Present",
+          "stack": [
+            "Node.js",
+            "postgreSQL",
+            "Redis",
+            "MongoDB",
+            "Docker"
+          ]
+        }
+      ],
+      "summary_claimed_years": 0.0,
+      "years_experience": 3.3,
+      "years_relevant_experience": 2.5,
+      "dates_extracted_ok": true,
+      "technical_skills": [
+        "Javascript",
+        "Typescript",
+        "Java",
+        "C/C++",
+        "Node.js",
+        "React.js",
+        "Next.js",
+        "Express.js",
+        "TypeScript",
+        "JavaScript",
+        "Redux",
+        "HTML",
+        "CSS",
+        "SASS",
+        "Tailwind CSS",
+        "PostgreSQL",
+        "MySQL",
+        "OpenSearch",
+        "ElasticSearch",
+        "Redis",
+        "MongoDB",
+        "Firebase",
+        "RabbitMQ",
+        "Kafka",
+        "Git",
+        "GitHub",
+        "Docker",
+        "Postman",
+        "Data Structures",
+        "Object Oriented Programming",
+        "Operating Systems",
+        "Database Management Systems"
+      ],
+      "soft_skills": [],
+      "education": [
+        "B.Tech, Delhi Technological University, CGPA: 7.7",
+        "Major in Electrical Engineering, Minor in IT Engineering"
+      ]
+    },
+    "assessment": {
+      "skills_match_score": 75,
+      "experience_match_score": 83,
+      "seniority_match_score": 85,
+      "matched_required": [
+        "MongoDB",
+        "Express.js",
+        "React.js",
+        "Node.js",
+        "JavaScript",
+        "HTML5",
+        "CSS3",
+        "Git",
+        "Docker"
+      ],
+      "missing_required": [
+        "RESTful APIs",
+        "AWS",
+        "CI/CD"
+      ],
+      "matched_nice_to_have": [
+        "TypeScript"
+      ],
+      "strengths": [
+        "CSS3",
+        "Docker",
+        "Express.js",
+        "Git",
+        "HTML5",
+        "JavaScript",
+        "MongoDB",
+        "Node.js",
+        "React.js",
+        "TypeScript"
+      ],
+      "gaps": [
+        "RESTful APIs",
+        "AWS",
+        "CI/CD"
+      ],
+      "rationale": "The candidate has a strong technical background with a good match in required skills for the MERN Stack Developer role, including MongoDB, Express.js, React.js, Node.js, JavaScript, HTML5, CSS3, Git, and Docker. However, there are some gaps in required skills such as RESTful APIs, AWS, and CI/CD. The candidate's experience and seniority also align well with the role, with an experience match score of 83 and a seniority match score of 85.",
+      "overall_score": 79
+    },
+    "suggestions": [
+      "Implement a RESTful API using Express.js to demonstrate expertise in building scalable and maintainable APIs.",
+      "Set up a CI/CD pipeline using AWS to automate testing, building, and deployment of the application.",
+      "Develop a project that showcases expertise in using AWS services such as S3, EC2, or Lambda to improve the overall architecture and scalability of the application."
+    ]
+  },
+  {
+    "resume": "Naukri_TarunUpadhayay[3y_0m].pdf",
+    "target_role": "Full Stack / MERN Developer",
+    "elapsed_sec": 4.9,
+    "profile": {
+      "name": "Tarun Upadhayay",
+      "email": "tarunupadhayay95@gmail.com",
+      "work_history": [
+        {
+          "role": "Software Engineer",
+          "company": "IN TIME TEC",
+          "start_date": "July 2023",
+          "end_date": "Present",
+          "stack": [
+            "MongoDB",
+            "Express.js",
+            "React.js",
+            "Node.js",
+            "PostgreSQL",
+            "MongoDB",
+            "MySQL",
+            "Bitmovin",
+            "Google Maps API",
+            "Azure Functions",
+            "AWS",
+            "Docker"
+          ]
+        }
+      ],
+      "summary_claimed_years": 0.0,
+      "years_experience": 2.9,
+      "years_relevant_experience": 2.9,
+      "dates_extracted_ok": true,
+      "technical_skills": [
+        "JavaScript",
+        "TypeScript",
+        "C++",
+        "Python",
+        "Java",
+        "React.js",
+        "Redux Toolkit",
+        "Node.js",
+        "Express",
+        "Nest.js",
+        "Jest",
+        "TypeORM",
+        "GraphQL",
+        "Bitmovin",
+        "ClamAV",
+        "Firebase SDK",
+        "Google Maps API",
+        "PostgreSQL",
+        "MySQL",
+        "MongoDB",
+        "Azure Blob Storage",
+        "AWS",
+        "Azure Functions",
+        "Firebase",
+        "HiveMQ (MQTT Broker)",
+        "HTML5",
+        "CSS3",
+        "REST APIs",
+        "Git",
+        "Postman",
+        "VS Code",
+        "Express.js",
+        "RESTful APIs",
+        "Docker",
+        "CI/CD",
+        "Agile"
+      ],
+      "soft_skills": [
+        "Agile Development",
+        "Team Collaboration",
+        "Problem Solving",
+        "Adaptability"
+      ],
+      "education": [
+        "B.Tech. in Computer Engineering from POORNIMA COLLEGE OF ENGINEERING"
+      ]
+    },
+    "assessment": {
+      "skills_match_score": 100,
+      "experience_match_score": 97,
+      "seniority_match_score": 68,
+      "matched_required": [
+        "MongoDB",
+        "Express.js",
+        "React.js",
+        "Node.js",
+        "JavaScript",
+        "HTML5",
+        "CSS3",
+        "RESTful APIs",
+        "Git",
+        "AWS",
+        "Docker",
+        "CI/CD"
+      ],
+      "missing_required": [],
+      "matched_nice_to_have": [
+        "GraphQL",
+        "TypeScript",
+        "Agile",
+        "Scrum"
+      ],
+      "strengths": [
+        "AWS",
+        "Agile",
+        "CI/CD",
+        "CSS3",
+        "Docker",
+        "Express.js",
+        "Git",
+        "GraphQL",
+        "HTML5",
+        "JavaScript",
+        "MongoDB",
+        "Node.js",
+        "RESTful APIs",
+        "React.js",
+        "Scrum",
+        "TypeScript"
+      ],
+      "gaps": [],
+      "rationale": "The candidate has a strong technical background with a 100% match in required skills for the MERN Stack Developer role, including MongoDB, Express.js, React.js, Node.js, JavaScript, HTML5, CSS3, RESTful APIs, Git, AWS, Docker, and CI/CD. However, the candidate's experience match score is 97%, indicating a slight shortfall in the required minimum years of experience. The seniority match score is 68%, suggesting that the candidate may not fully meet the mid-level seniority requirement.",
+      "overall_score": 93
+    },
+    "suggestions": [
+      "Consider highlighting specific projects or experiences that demonstrate your ability to work at a mid-level seniority, such as leading a team or taking on additional responsibilities.",
+      "Quantify your impact in your current role by adding metrics or statistics to your resume, such as 'Increased deployment frequency by 30% through implementation of CI/CD pipelines'.",
+      "Emphasize your strengths in AWS, Agile, CI/CD, CSS3, Docker, Express.js, Git, GraphQL, HTML5, JavaScript, MongoDB, Node.js, RESTful APIs, React.js, Scrum, and TypeScript by using keywords from the job description and highlighting relevant projects or experiences.",
+      "Add a section to your resume dedicated to showcasing your experience with the MERN stack, including specific technologies such as MongoDB, Express.js, React.js, and Node.js."
+    ]
+  },
+  {
+    "resume": "Naukri_vishalrana[3y_0m].pdf",
+    "target_role": "Full Stack / MERN Developer",
+    "elapsed_sec": 3.6,
+    "profile": {
+      "name": "VISHAL RANA",
+      "email": "vishalrana7861@gmail.com",
+      "work_history": [
+        {
+          "role": "Senior Software Engineer",
+          "company": "Nuvento",
+          "start_date": "Nov 2025",
+          "end_date": "Present",
+          "stack": [
+            "TypeScript",
+            "Redis",
+            "Joi",
+            "Zod",
+            "Swagger/OpenAPI",
+            "Jenkins",
+            "Kubernetes",
+            "Docker",
+            "AWS",
+            "MongoDB",
+            "Git"
+          ]
+        },
+        {
+          "role": "Software Engineer to Senior Software Engineer",
+          "company": "Happiest Minds Technologies",
+          "start_date": "Aug 2023",
+          "end_date": "Nov 2025",
+          "stack": [
+            "Node.js",
+            "MongoDB",
+            "MySQL",
+            "Redux Toolkit"
+          ]
+        }
+      ],
+      "summary_claimed_years": 3.0,
+      "years_experience": 2.8,
+      "years_relevant_experience": 2.3,
+      "dates_extracted_ok": true,
+      "technical_skills": [
+        "React.js",
+        "Next.js",
+        "TypeScript",
+        "JavaScript (ES6+)",
+        "Redux Toolkit",
+        "React Hooks",
+        "Material UI",
+        "Node.js",
+        "Express.js",
+        "NestJS",
+        "RESTful APIs",
+        "GraphQL",
+        "WebSockets",
+        "Microservices",
+        "OOPs",
+        "MongoDB",
+        "Mongoose",
+        "MySQL",
+        "PostgreSQL",
+        "Redis",
+        "Docker",
+        "Kubernetes",
+        "Jenkins",
+        "CI/CD",
+        "GitHub Actions",
+        "AWS (EC2, S3, Secrets Manager, IAM)",
+        "Linux",
+        "Claude Code",
+        "Cursor",
+        "GitHub Copilot",
+        "LLM API Integration",
+        "Prompt Engineering",
+        "MCP",
+        "Git",
+        "npm",
+        "Postman",
+        "Jest",
+        "React Testing Library",
+        "Swagger/OpenAPI",
+        "Joi",
+        "Zod",
+        "SDLC",
+        "Agile/Scrum",
+        "JavaScript",
+        "AWS",
+        "Agile",
+        "Scrum"
+      ],
+      "soft_skills": [],
+      "education": [
+        "B.Tech in Computer Science & Engineering"
+      ]
+    },
+    "assessment": {
+      "skills_match_score": 83,
+      "experience_match_score": 77,
+      "seniority_match_score": 90,
+      "matched_required": [
+        "MongoDB",
+        "Express.js",
+        "React.js",
+        "Node.js",
+        "JavaScript",
+        "RESTful APIs",
+        "Git",
+        "AWS",
+        "Docker",
+        "CI/CD"
+      ],
+      "missing_required": [
+        "HTML5",
+        "CSS3"
+      ],
+      "matched_nice_to_have": [
+        "GraphQL",
+        "TypeScript",
+        "Agile",
+        "Scrum"
+      ],
+      "strengths": [
+        "AWS",
+        "Agile",
+        "CI/CD",
+        "Docker",
+        "Express.js",
+        "Git",
+        "GraphQL",
+        "JavaScript",
+        "MongoDB",
+        "Node.js",
+        "RESTful APIs",
+        "React.js",
+        "Scrum",
+        "TypeScript"
+      ],
+      "gaps": [
+        "HTML5",
+        "CSS3"
+      ],
+      "rationale": "The candidate has a strong technical background with a high seniority match score, and has matched most of the required skills, including MongoDB, Express.js, React.js, Node.js, JavaScript, RESTful APIs, Git, AWS, Docker, and CI/CD. However, they are missing HTML5 and CSS3 skills, which are essential for the role. Their experience match score is relatively lower, but still indicates a good level of experience.",
+      "overall_score": 83
+    },
+    "suggestions": [
+      "Consider taking online courses or attending workshops to fill the gap in HTML5 and CSS3 skills. You can start by learning the basics of HTML5 and CSS3 and then move on to more advanced topics such as responsive web design and CSS preprocessors like Sass or Less.",
+      "Update your resume to include any relevant projects or experiences where you have applied HTML5 and CSS3 skills. This will help demonstrate your ability to fill the gap and make you a more competitive candidate for the role.",
+      "Practice building real-world projects that utilize HTML5 and CSS3 skills. This will help you gain hands-on experience and build a portfolio of work that showcases your skills and abilities."
+    ]
+  },
+  {
+    "resume": "Naukri_AakashMaddheshiya[3y_0m].pdf",
+    "target_role": "AI & Computer Vision Engineer",
+    "elapsed_sec": 3.6,
+    "profile": {
+      "name": "Aakash Maddheshiya",
+      "email": "aakashmaddheshiya887@gmail.com",
+      "work_history": [
+        {
+          "role": "Software Developer",
+          "company": "Deep Blue Xpress Pvt. Ltd.",
+          "start_date": "Sep 2025",
+          "end_date": "Present",
+          "stack": [
+            "Flask",
+            "Selenium"
+          ]
+        },
+        {
+          "role": "Python Developer",
+          "company": "Sagar Informatics Pvt. Ltd.",
+          "start_date": "Oct 2023",
+          "end_date": "Sep 2025",
+          "stack": [
+            "Flask",
+            "Computer Vision",
+            "PyTorch",
+            "LangChain"
+          ]
+        },
+        {
+          "role": "Software Engineer",
+          "company": "Acuvate Software Pvt. Ltd.",
+          "start_date": "May 2022",
+          "end_date": "Oct 2023",
+          "stack": [
+            "Azure ML Studio",
+            "Azure SQL"
+          ]
+        }
+      ],
+      "summary_claimed_years": 3.0,
+      "years_experience": 4.1,
+      "years_relevant_experience": 3.6,
+      "dates_extracted_ok": true,
+      "technical_skills": [
+        "Python",
+        "Flask",
+        "RESTful APIs",
+        "PyTorch",
+        "TensorFlow",
+        "Scikit-learn",
+        "YOLO (Object Detection)",
+        "Deep Learning",
+        "Computer Vision",
+        "LLM-based Applications",
+        "LangChain",
+        "FAISS",
+        "RAG Architectures",
+        "OpenCV",
+        "PaddleOCR",
+        "Microsoft Azure",
+        "Azure ML Studio",
+        "Azure OpenAI Service",
+        "Azure SQL",
+        "Docker",
+        "Git",
+        "SVN (Subversion)",
+        "Selenium (Web Scraping & Automation)",
+        "Selenium",
+        "Machine Learning"
+      ],
+      "soft_skills": [],
+      "education": [
+        "B.Tech in Computer Science & Engineering"
+      ]
+    },
+    "assessment": {
+      "skills_match_score": 88,
+      "experience_match_score": 100,
+      "seniority_match_score": 85,
+      "matched_required": [
+        "Python",
+        "PyTorch",
+        "CNNs",
+        "Transformers",
+        "Machine Learning",
+        "Computer Vision",
+        "Deep Learning"
+      ],
+      "missing_required": [
+        "Hugging Face Transformers"
+      ],
+      "matched_nice_to_have": [
+        "LangChain",
+        "Docker",
+        "Vector databases"
+      ],
+      "strengths": [
+        "CNNs",
+        "Computer Vision",
+        "Deep Learning",
+        "Docker",
+        "LangChain",
+        "Machine Learning",
+        "PyTorch",
+        "Python",
+        "Transformers",
+        "Vector databases"
+      ],
+      "gaps": [
+        "Hugging Face Transformers"
+      ],
+      "rationale": "The candidate has a strong technical background with a high skills match score of 88, primarily due to their proficiency in Python, PyTorch, Computer Vision, and Deep Learning. Their experience match score is 100, indicating a perfect alignment with the required years of experience for the AI Engineer role. However, they are missing Hugging Face Transformers, which is a required skill.",
+      "overall_score": 91
+    },
+    "suggestions": [
+      "Consider taking online courses or attending workshops to learn Hugging Face Transformers, which is a required skill for the AI & Computer Vision Engineer role.",
+      "Develop a project that utilizes Hugging Face Transformers to demonstrate your skills and showcase it on platforms like GitHub or GitLab.",
+      "Update your resume to include a section on your learning journey, highlighting the skills you're currently acquiring and the projects you're working on to fill the gaps in your profile."
+    ]
+  },
+  {
+    "resume": "Naukri_AbhishekMajhi[4y_0m].pdf",
+    "target_role": "AI & Computer Vision Engineer",
+    "elapsed_sec": 3.0,
+    "profile": {
+      "name": "Abhishek Majhi",
+      "email": "abhishekofficial538@gmail.com",
+      "work_history": [
+        {
+          "role": "AI Engineer",
+          "company": "TartanHQ",
+          "start_date": "07/2025",
+          "end_date": "Present",
+          "stack": [
+            "MongoDB",
+            "RAG",
+            "LangGraph",
+            "Hybrid Retrieval"
+          ]
+        },
+        {
+          "role": "Software Engineer",
+          "company": "Coforge LTD",
+          "start_date": "03/2022",
+          "end_date": "06/2025",
+          "stack": []
+        }
+      ],
+      "summary_claimed_years": 4.0,
+      "years_experience": 4.1,
+      "years_relevant_experience": 3.1,
+      "dates_extracted_ok": true,
+      "technical_skills": [
+        "Python",
+        "Java",
+        "RAG",
+        "Hybrid Retrieval",
+        "LangGraph",
+        "Agent Systems",
+        "Query Reformulation",
+        "Reranking",
+        "Llama 3",
+        "Mistral",
+        "Qwen",
+        "QLoRA",
+        "PEFT",
+        "RLHF",
+        "DPO",
+        "TensorFlow Keras",
+        "PyTorch",
+        "Hugging Face",
+        "LangChain",
+        "LlamaIndex",
+        "Streamlit",
+        "FAISS",
+        "Pinecone",
+        "MongoDB",
+        "SQL",
+        "AWS",
+        "RNN",
+        "LSTM",
+        "GRU",
+        "NLTK",
+        "Git"
+      ],
+      "soft_skills": [],
+      "education": [
+        "B. Tech in Computer Science and Engineering | Biju Patnaik University of Technology (2018\u20132022)"
+      ]
+    },
+    "assessment": {
+      "skills_match_score": 75,
+      "experience_match_score": 100,
+      "seniority_match_score": 85,
+      "matched_required": [
+        "Python",
+        "PyTorch",
+        "Transformers",
+        "Hugging Face Transformers",
+        "Machine Learning",
+        "Deep Learning"
+      ],
+      "missing_required": [
+        "CNNs",
+        "Computer Vision"
+      ],
+      "matched_nice_to_have": [
+        "LangChain",
+        "RAG systems",
+        "Vector databases"
+      ],
+      "strengths": [
+        "Deep Learning",
+        "Hugging Face Transformers",
+        "LangChain",
+        "Machine Learning",
+        "PyTorch",
+        "Python",
+        "RAG systems",
+        "Transformers",
+        "Vector databases"
+      ],
+      "gaps": [
+        "CNNs",
+        "Computer Vision"
+      ],
+      "rationale": "The candidate, Abhishek Majhi, has a strong match for the AI Engineer role, with a skills match score of 75% and an experience match score of 100%. They possess key required skills such as Python, PyTorch, Transformers, and Hugging Face Transformers, but lack experience in CNNs and Computer Vision. Given their mid-level seniority and 4.1 years of experience, they are a suitable fit for the position, although some additional training in computer vision may be necessary.",
+      "overall_score": 84
+    },
+    "suggestions": [
+      "Consider taking online courses or attending workshops to gain hands-on experience with CNNs and Computer Vision, such as those offered on Coursera, Udemy, or edX.",
+      "Develop a personal project that showcases your skills in CNNs and Computer Vision, and highlight it prominently in your resume and online profiles.",
+      "Network with professionals in the field of AI & Computer Vision Engineering and ask for advice on how to improve your skills and gain experience in this area.",
+      "Update your resume to include relevant coursework, projects, or certifications that demonstrate your knowledge and skills in CNNs and Computer Vision.",
+      "Practice building and deploying computer vision models using popular libraries such as OpenCV, TensorFlow, or PyTorch, and showcase your work on platforms like GitHub or Kaggle."
+    ]
+  },
+  {
+    "resume": "Naukri_AshutoshAman[3y_5m].pdf",
+    "target_role": "AI & Computer Vision Engineer",
+    "elapsed_sec": 5.5,
+    "profile": {
+      "name": "ASHUTOSH AMAN",
+      "email": "ashuakv79@gmail.com",
+      "work_history": [
+        {
+          "role": "AI/ML Engineer",
+          "company": "Cancard International Pvt Ltd",
+          "start_date": "Jun 2025",
+          "end_date": "Present",
+          "stack": [
+            "FastAPI"
+          ]
+        },
+        {
+          "role": "AI/ML Engineer",
+          "company": "Elixir Softech Pvt Ltd (Enalytix)",
+          "start_date": "May 2024",
+          "end_date": "Jun 2025",
+          "stack": []
+        },
+        {
+          "role": "AI Onsite Engineer",
+          "company": "Netweb Technologies Pvt Ltd",
+          "start_date": "Aug 2022",
+          "end_date": "Apr 2024",
+          "stack": [
+            "LangChain"
+          ]
+        }
+      ],
+      "summary_claimed_years": 3.5,
+      "years_experience": 3.7,
+      "years_relevant_experience": 3.2,
+      "dates_extracted_ok": true,
+      "technical_skills": [
+        "Languages: Python, JavaScript",
+        "AI / ML: LLMs, LangChain, LangGraph, RAG, NLP, OCR, Computer Vision, Pytorch",
+        "Frameworks & Library: Hugging Face, Whisper, OpenAI API, YOLO, OpenCV, PaddleOCR",
+        "Backend: FastAPI, REST APIs",
+        "Frontend: React",
+        "Databases: ChromaDB, FAISS, MySQL",
+        "DevOps & Tools: Docker, Git",
+        "JavaScript",
+        "Docker",
+        "Git",
+        "Python",
+        "PyTorch",
+        "Machine Learning",
+        "Computer Vision",
+        "FastAPI",
+        "LangChain"
+      ],
+      "soft_skills": [],
+      "education": [
+        "Post Graduate Diploma Programme in ML & AI \u2014 IIIT Bangalore",
+        "B.Tech in Electronics & Communication Engineering \u2014 NIET, Greater Noida"
+      ]
+    },
+    "assessment": {
+      "skills_match_score": 88,
+      "experience_match_score": 100,
+      "seniority_match_score": 85,
+      "matched_required": [
+        "Python",
+        "PyTorch",
+        "CNNs",
+        "Transformers",
+        "Machine Learning",
+        "Computer Vision",
+        "Deep Learning"
+      ],
+      "missing_required": [
+        "Hugging Face Transformers"
+      ],
+      "matched_nice_to_have": [
+        "LangChain",
+        "FastAPI",
+        "Docker",
+        "RAG systems",
+        "Vector databases"
+      ],
+      "strengths": [
+        "CNNs",
+        "Computer Vision",
+        "Deep Learning",
+        "Docker",
+        "FastAPI",
+        "LangChain",
+        "Machine Learning",
+        "PyTorch",
+        "Python",
+        "RAG systems",
+        "Transformers",
+        "Vector databases"
+      ],
+      "gaps": [
+        "Hugging Face Transformers"
+      ],
+      "rationale": "The candidate, ASHUTOSH AMAN, has a strong technical background with a high skills match score of 88, indicating a good fit for the required skills such as Python, PyTorch, and Computer Vision. However, they are missing Hugging Face Transformers, which is a required skill. The candidate's experience match score is 100, suggesting a perfect alignment with the experience requirements, and their seniority match score is 85, indicating a good fit for the mid-level seniority.",
+      "overall_score": 91
+    },
+    "suggestions": [
+      "Fill the gap in Hugging Face Transformers by completing a project that utilizes this library, such as building a model for text classification or sentiment analysis. This will not only demonstrate your ability to work with Hugging Face Transformers but also showcase your skills in AI and Computer Vision.",
+      "Quantify your impact in your current projects by adding metrics and results sections. This will help demonstrate the value you've added to your previous roles and make your resume more impactful.",
+      "Surface less-visible relevant work by highlighting any personal projects or contributions to open-source projects that demonstrate your skills in AI and Computer Vision. This will help showcase your expertise and make your resume more comprehensive."
+    ]
+  },
+  {
+    "resume": "Naukri_AbhilashKumarSoni[4y_6m].pdf",
+    "target_role": "QA Engineer",
+    "elapsed_sec": 3.8,
+    "profile": {
+      "name": "Abhilash Kumar Soni",
+      "email": "abbysoni18@gmail.com",
+      "work_history": [
+        {
+          "role": "Software Testing Engineer",
+          "company": "Bromcom LLC (UK)",
+          "start_date": "",
+          "end_date": "",
+          "stack": [
+            "SQL",
+            "JMeter",
+            "Selenium",
+            "Java",
+            "JIRA"
+          ]
+        },
+        {
+          "role": "Software Testing Engineer",
+          "company": "UnboundX",
+          "start_date": "",
+          "end_date": "",
+          "stack": [
+            "JMeter",
+            "OWASP ZAP",
+            "Postman",
+            "Selenium",
+            "Java"
+          ]
+        },
+        {
+          "role": "Software Testing Engineer",
+          "company": "BusiCard",
+          "start_date": "",
+          "end_date": "",
+          "stack": [
+            "Selenium",
+            "Java",
+            "JMeter"
+          ]
+        },
+        {
+          "role": "Software Testing Engineer",
+          "company": "Xponent (UAE)",
+          "start_date": "",
+          "end_date": "",
+          "stack": [
+            "OWASP ZAP",
+            "Postman",
+            "JMeter"
+          ]
+        }
+      ],
+      "summary_claimed_years": 3.0,
+      "years_experience": 3.0,
+      "years_relevant_experience": 2.1,
+      "dates_extracted_ok": false,
+      "technical_skills": [
+        "Agile",
+        "Scrum",
+        "Functional Testing",
+        "Regression Testing",
+        "Test Plan creation & Execution",
+        "Bug & Defect Management",
+        "Database testing using SQL",
+        "Performance Testing with JMeter",
+        "Security Testing with Owasp ZAP",
+        "Selenium",
+        "JMeter",
+        "Jira",
+        "Owasp Zap",
+        "Postman",
+        "Swagger",
+        "TestIM & Rainforest",
+        "C++",
+        "Java",
+        "SQL",
+        "JavaScript",
+        "GIT",
+        "TestNG",
+        "Performance Testing",
+        "API Testing",
+        "Manual Testing"
+      ],
+      "soft_skills": [],
+      "education": [
+        "B.E.: TIT & S (2018)"
+      ]
+    },
+    "assessment": {
+      "skills_match_score": 71,
+      "experience_match_score": 50,
+      "seniority_match_score": 85,
+      "matched_required": [
+        "Performance Testing",
+        "API Testing",
+        "Manual Testing",
+        "Test Automation",
+        "JMeter",
+        "Postman",
+        "Selenium",
+        "TestNG",
+        "Java",
+        "Git"
+      ],
+      "missing_required": [
+        "Gatling",
+        "LoadRunner",
+        "REST Assured",
+        "Python"
+      ],
+      "matched_nice_to_have": [],
+      "strengths": [
+        "API Testing",
+        "Git",
+        "JMeter",
+        "Java",
+        "Manual Testing",
+        "Performance Testing",
+        "Postman",
+        "Selenium",
+        "Test Automation",
+        "TestNG"
+      ],
+      "gaps": [
+        "Gatling",
+        "LoadRunner",
+        "REST Assured",
+        "Python"
+      ],
+      "rationale": "The candidate's skills match the job requirements with a score of 71, with notable matches in Performance Testing, API Testing, and Manual Testing, but are missing skills like Gatling and LoadRunner. The candidate's experience figure is unverified, but their seniority aligns well with the mid-level role, with a match score of 85.",
+      "overall_score": 68
+    },
+    "suggestions": [
+      "Consider taking online courses or attending workshops to learn Gatling and LoadRunner, as these are crucial skills for a QA Engineer.",
+      "Develop a project that showcases your expertise in REST Assured, a key skill missing from your profile.",
+      "Replace your manual testing experience with automated testing experience using tools like Selenium and TestNG, and provide metrics to demonstrate the impact of your work.",
+      "Quantify your impact in your current role by including metrics and statistics in your resume, such as 'Improved test coverage by 25% through automation' or 'Reduced testing time by 30% through process optimization'."
+    ]
+  },
+  {
+    "resume": "Naukri_DivyaRai[4y_0m].pdf",
+    "target_role": "QA Engineer",
+    "elapsed_sec": 4.2,
+    "profile": {
+      "name": "DIVYA RAI",
+      "email": "divyarai9866@gmail.com",
+      "work_history": [
+        {
+          "role": "Quality Analyst",
+          "company": "Plutos One",
+          "start_date": "Feb 2022",
+          "end_date": "Present",
+          "stack": [
+            "JMeter",
+            "JIRA",
+            "API",
+            "SQL"
+          ]
+        }
+      ],
+      "summary_claimed_years": 4.0,
+      "years_experience": 4.3,
+      "years_relevant_experience": 2.5,
+      "dates_extracted_ok": true,
+      "technical_skills": [
+        "Functional",
+        "Regression",
+        "Smoke",
+        "Sanity",
+        "UAT",
+        "API",
+        "Database",
+        "Mobile App",
+        "Performance",
+        "Integration",
+        "End-to-End",
+        "Cross-Browser testing",
+        "JIRA",
+        "Postman",
+        "JMeter",
+        "TestRail",
+        "Excel",
+        "Selenium",
+        "TestNG",
+        "SQL",
+        "DML",
+        "DDL",
+        "DCL",
+        "TCL",
+        "Agile",
+        "Scrum",
+        "Performance Testing"
+      ],
+      "soft_skills": [],
+      "education": [
+        "M.Sc. \u2013 H.D. Jain College, ARA \u2014 2023 \u2014 CGPA: 8.06",
+        "B.Sc. \u2013 R.M. Devi, C.D. Rai College, Kochas \u2014 2021 \u2014 74%",
+        "Diploma in Electronics Engineering \u2013 Govt. Girls Polytechnic, Ayodhya \u2014 2017 \u2014 80.4%"
+      ]
+    },
+    "assessment": {
+      "skills_match_score": 57,
+      "experience_match_score": 83,
+      "seniority_match_score": 85,
+      "matched_required": [
+        "Performance Testing",
+        "API Testing",
+        "Manual Testing",
+        "Test Automation",
+        "JMeter",
+        "Postman",
+        "Selenium",
+        "TestNG"
+      ],
+      "missing_required": [
+        "Gatling",
+        "LoadRunner",
+        "REST Assured",
+        "Python",
+        "Java",
+        "Git"
+      ],
+      "matched_nice_to_have": [],
+      "strengths": [
+        "API Testing",
+        "JMeter",
+        "Manual Testing",
+        "Performance Testing",
+        "Postman",
+        "Selenium",
+        "Test Automation",
+        "TestNG"
+      ],
+      "gaps": [
+        "Gatling",
+        "LoadRunner",
+        "REST Assured",
+        "Python",
+        "Java",
+        "Git"
+      ],
+      "rationale": "The candidate has a strong foundation in testing skills, including Performance Testing, API Testing, and Test Automation, with a skills match score of 57% and an experience match score of 83%. However, they lack some required technical skills, such as Gatling, LoadRunner, REST Assured, Python, Java, and Git, which may impact their ability to perform the job responsibilities. Their seniority match score of 85% suggests they are a good fit for the mid-level role.",
+      "overall_score": 70
+    },
+    "suggestions": [
+      "Consider taking online courses or attending workshops to learn Gatling, LoadRunner, and REST Assured, as these skills are highly required for the QA Engineer role.",
+      "Develop a personal project that utilizes Python and Java to demonstrate your proficiency in these languages, and highlight this project in your resume.",
+      "Familiarize yourself with Git and version control systems, and include a section in your resume that showcases your experience with Git and any other version control systems you've used.",
+      "Quantify your experience with API Testing, Performance Testing, and Test Automation by including specific metrics or statistics in your resume, such as 'Improved test coverage by 25%' or 'Reduced test execution time by 30%'.",
+      "Emphasize your strengths in API Testing, JMeter, Manual Testing, Performance Testing, Postman, Selenium, Test Automation, and TestNG by creating a separate section in your resume that highlights your technical skills and experience."
+    ]
+  },
+  {
+    "resume": "Naukri_YASHSONI[4y_6m].pdf",
+    "target_role": "QA Engineer",
+    "elapsed_sec": 2.8,
+    "profile": {
+      "name": "YASH SONI",
+      "email": "soniyash771@gmail.com",
+      "work_history": [
+        {
+          "role": "QA Engineer",
+          "company": "Qbit Labs",
+          "start_date": "May 2024",
+          "end_date": "Present",
+          "stack": [
+            "JIRA",
+            "Python"
+          ]
+        },
+        {
+          "role": "Test Engineer",
+          "company": "Entire Software IT Design Pvt Ltd",
+          "start_date": "Sept 2021",
+          "end_date": "April 2024",
+          "stack": [
+            "Postman",
+            "JMeter",
+            "SQL",
+            "JIRA"
+          ]
+        }
+      ],
+      "summary_claimed_years": 4.0,
+      "years_experience": 4.6,
+      "years_relevant_experience": 2.3,
+      "dates_extracted_ok": true,
+      "technical_skills": [
+        "Python (Basic)",
+        "Selenium WebDriver (Learning)",
+        "Postman",
+        "JSON Validation",
+        "Status Code Verification",
+        "Authentication (Bearer Token)",
+        "Apache JMeter",
+        "SQL",
+        "JIRA",
+        "Agile",
+        "Scrum",
+        "SDLC",
+        "STLC",
+        "Windows",
+        "macOS",
+        "Selenium",
+        "JMeter",
+        "Performance Testing",
+        "API Testing",
+        "Python"
+      ],
+      "soft_skills": [],
+      "education": [
+        "Bachelor of Technology (B. Tech) - Rajasthan Technical University"
+      ]
+    },
+    "assessment": {
+      "skills_match_score": 50,
+      "experience_match_score": 77,
+      "seniority_match_score": 85,
+      "matched_required": [
+        "Performance Testing",
+        "API Testing",
+        "Test Automation",
+        "JMeter",
+        "Postman",
+        "Selenium",
+        "Python"
+      ],
+      "missing_required": [
+        "Manual Testing",
+        "Gatling",
+        "LoadRunner",
+        "REST Assured",
+        "TestNG",
+        "Java",
+        "Git"
+      ],
+      "matched_nice_to_have": [],
+      "strengths": [
+        "API Testing",
+        "JMeter",
+        "Performance Testing",
+        "Postman",
+        "Python",
+        "Selenium",
+        "Test Automation"
+      ],
+      "gaps": [
+        "Manual Testing",
+        "Gatling",
+        "LoadRunner",
+        "REST Assured",
+        "TestNG",
+        "Java",
+        "Git"
+      ],
+      "rationale": "The candidate has a strong background in QA engineering with relevant experience in performance testing, API testing, and test automation, matching several required skills such as JMeter, Postman, Selenium, and Python. However, they lack experience in manual testing, Gatling, LoadRunner, REST Assured, TestNG, Java, and Git. Their experience and seniority match scores are 77 and 85, respectively, indicating a good fit for the role, but the skills gap may require additional training or development.",
+      "overall_score": 65
+    },
+    "suggestions": [
+      "Develop a project that showcases your manual testing skills to fill the gap in your resume.",
+      "Create a personal project that utilizes Gatling, LoadRunner, and REST Assured to demonstrate your ability to work with these tools.",
+      "Build a test automation framework using TestNG and Java to address the missing required skills.",
+      "Familiarize yourself with Git and include a project that demonstrates your version control skills.",
+      "Quantify your experience in API testing, performance testing, and test automation by including metrics and specific examples in your resume."
+    ]
+  }
+]
