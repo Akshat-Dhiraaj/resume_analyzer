@@ -13,6 +13,7 @@ which gives the high-level flow.
 | Repairing kerned name (`A B H I S H E K  M A J H I` → `ABHISHEK MAJHI`) | `clean_name()` | PDF kerning artefacts leak into the LLM's extracted name. Single regex collapse, only triggers when ≥60% of tokens are single characters |
 | Dropping placeholder work_history entries with blank role/company | `drop_empty_roles()` | 8B occasionally promotes a course/open-source line into work_history with empty fields. Empty-role entries break the seniority inference and pollute the JSON |
 | Filtering education to post-secondary entries | `filter_education()` keyed off `_DEGREE_KEYWORDS` | The LLM keeps school entries despite the docstring telling it not to. Cheaper to filter in Python than to retry |
+| Dropping job titles mis-filed as certifications | `drop_non_certifications()` — keep credential-worded names, drop role-shaped ones (`intern`/`engineer`/…) that lack a credential word | The LLM filed "Data Science Intern" as a cert, which polluted both the output and `cert_knowledge.json`. Credential words (`certified`/`professional`/`associate`/…) override the role check, so "AWS Certified Developer - Associate" survives |
 | Caching parsed JDs across runs | `get_or_parse_requirements()` in `test_analyser.py`, writes to `requirements_cache.json` | JD content doesn't change between candidate evaluations; saves 1 LLM call per JD per run |
 | Distinguishing required vs nice-to-have skills | JDParser puts mandatory items in `required_skills`, optional/preferred items in `nice_to_have_skills` | Equal weighting of "must have AWS" and "Kafka is a plus" would distort scoring |
 | Identifying skills, education, work entries (structure only) | `dspy.ChainOfThought(ExtractProfile)` | The LLM produces the shape; deterministic passes correct the content |
@@ -26,10 +27,12 @@ which gives the high-level flow.
 | Detecting genuine vs. hallucinated dates | `dates_present()` — no usable starts → False; >1 role ALL with non-empty starts AND all identical → False; >1 role ALL with non-empty starts AND all ending in `present` → False | Abhilash's case: 4 roles all returned start='2018' / end='present'. Partial data (one verified role + one role with empty dates) is still considered valid |
 | Reconciling computed years vs the resume's prose claim | `reconcile_years()` heuristic | LLM-extracted start dates can be wrong; the prose claim is a sanity-check ceiling. Rule: if computed > claimed + 2.0 years, the claim wins |
 | Extracting the claimed-years figure | `extract_claimed_years()` — regex over `resume_text[:600]` | Three patterns: Naukri header tag (`3y 1m`), `X+ years experience`, bare `X years`. Reliable enough that the LLM doesn't need to populate `summary_claimed_years` at all |
-| Weighting years by relevance to the target JD | `compute_relevant_years()` — total years × (matched_count / required_count) | Takes pre-computed match counts so the caller doesn't recompute `match_skills` (already needed for the assessment). Nice-to-haves are NOT in this calculation: they signal fit-bonus, not relevance |
+| Weighting years by relevance to the target JD | `compute_relevant_years()` — total years × (evidence_sum / required_count) | Weighted by the same evidence sum used for the skills score, so a merely-listed skill contributes less relevant time than a demonstrated one. Nice-to-haves are NOT in this calculation: they signal fit-bonus, not relevance |
 | Skill matching against the JD | `match_skills()` — set membership over an expanded alias table | Replaces an earlier LLM step that hallucinated matches (Yash's `Selenium WebDriver` was wrongly flagged as missing `Selenium`). Now `(matched, missing)` is deterministic and uses the JD's canonical wording |
 | Splitting compound skills (`AWS (EC2, S3, IAM)`) into atoms | `_expand_candidate_stack()` — `re.split` on `()&/-,` | Makes synonym matching forgiving of resume formatting without resorting to substring search |
-| Computing the skills sub-score | `compute_skills_match_score()` — `100 · len(matched) / len(required)` | The LLM consistently inflated even when given Python-provided matched/missing (Aakash 5/8 → 85, Divya 8/14 → 85). Formula is a ratio; Python owns it |
+| Scoring each required skill by evidence | `build_evidence_map()` — 0–1 per skill from where it appears (project/role/cert/listed) + corroboration bonus | Binary "has it" rewards a candidate who merely lists AWS the same as one who shipped it. Evidence weighting separates demonstrated depth from self-claims. A skill is evidenced if it's in the skills list, a project, a role, OR a credential that *validates* it (certs expand into their skills, not just their title) |
+| Cert tier, reputation, skills, shelf-life | `classify_cert()` + `cert_weight()` over `cert_knowledge.json` (learned instance → `_patterns` official rules → one-time LLM enrichment → keyword heuristic) | Weight depends on REPUTATION not just tier: a professional cert or high-reputation course → 0.95 (beats a project), medium → 0.60, low → 0.45. Unseen certs get a single cheap-model enrichment call (`_enrich_cert_via_llm`) returning reputation + validated skills + validity, cached forever. Dated certs decay past validity (AWS/Red Hat 3y, GCP/CKA 2y, Azure 1y); undated treated as current |
+| Computing the skills sub-score | `compute_skills_match_score()` — `100 · mean(evidence)` | The LLM consistently inflated even when given Python-provided matched/missing (Aakash 5/8 → 85, Divya 8/14 → 85). Now an evidence-weighted mean, fully in Python |
 | Computing the experience sub-score | `compute_experience_match_score()` — ratio vs min, or absolute-years ladder when min is 0, capped at 50 when `dates_extracted_ok` is False | Same reason: ratio-based. The date-verification cap means Abhilash-class fabricated dates can never produce a high experience score |
 | Computing the seniority sub-score | `compute_seniority_score()` — title-rank lookup vs JD-target rank, with at-target / over-/under-qualified branches and a years-meets-min check | The LLM under-scored over-qualified candidates (Vishal: 70, expected 90) and over-scored under-experienced ones at-target |
 | Writing the fit rationale | `dspy.ChainOfThought(AssessFit)` — outputs `rationale` only | All sub-scores are Python-computed; the LLM narrates them in 2-3 sentences. Must acknowledge `dates_extracted_ok=False` when set |
@@ -79,13 +82,15 @@ which gives the high-level flow.
         │     years_experience   = reconcile_years(compute_years_experience(...),
         │                                          summary_claimed_years)
         │
-        ├── Phase 3: deterministic matching, relevance, and all sub-scores
-        │     stack = candidate_stack(profile)
-        │     matched_required, missing_required = match_skills(stack, requirements.required_skills)
-        │     matched_nice, _                    = match_skills(stack, requirements.nice_to_have_skills)
+        ├── Phase 3: evidence-weighted matching, relevance, and sub-scores
+        │     evidence = build_evidence_map(profile, requirements, today)  # {skill: (0–1, sources)}
+        │       └─ uses cert_knowledge.json for cert tier + recency
+        │     demonstrated / claimed_only / missing  ← split by evidence threshold
+        │     evidence_sum = Σ evidence
+        │     matched_nice, _ = match_skills(candidate_stack(profile), nice_to_have_skills)
         │     years_relevant_experience = compute_relevant_years(years_experience,
-        │                                          len(matched_required), len(required_skills))
-        │     skills_score     = compute_skills_match_score(matched_required, requirements.required_skills)
+        │                                          evidence_sum, len(required_skills))
+        │     skills_score     = compute_skills_match_score(evidence_sum, len(required_skills))
         │     experience_score = compute_experience_match_score(profile, requirements)
         │     seniority_score  = compute_seniority_score(profile, requirements)
         │
@@ -118,13 +123,14 @@ Loads `GROQ_API_KEY` from `.env` via `python-dotenv`. Single source of truth for
 | Section | What it does |
 |---|---|
 | LM setup | `precise_lm` (`llama-3.3-70b-versatile`, temp 0.0) is the global default via `dspy.configure(lm=precise_lm)` — used for JD parse, profile extraction, rationale narration. `creative_lm` (`llama-3.1-8b-instant`, temp 0.2) overrides via `dspy.context` for `GenerateAdvice` only. The split keeps a 10-candidate run inside Groq's 100K TPD cap on 70B |
-| Pydantic schemas | `WorkExperience`, `ResumeProfile`, `JobRequirements`, `_AssessRationale`, `FitAssessment`. Schemas are both `OutputField` types and the input contract for downstream stages |
+| Pydantic schemas | `WorkExperience`, `Project`, `Certification`, `ResumeProfile`, `JobRequirements`, `_AssessRationale`, `FitAssessment`. Schemas are both `OutputField` types and the input contract for downstream stages |
+| Skill evidence | `cert_knowledge.json` loader/saver, `classify_cert`, `cert_weight`, `build_evidence_map`, and the `EV_*` weight constants — the evidence layer between matching and scoring |
 | Signatures | `ParseJobDescription`, `ExtractProfile`, `AssessFit`, `GenerateAdvice`. The docstring of each is the instruction passed to the model |
 | Skill matching | `SYNONYMS` map + `_expand_candidate_stack`, `candidate_stack`, `match_skills` — pure Python, synonym-aware set arithmetic |
 | Date math | `_parse_ym`, `compute_years_experience`, `reconcile_years`, `dates_present` — `dateutil` for fuzzy/partial dates, merge-intervals for years, structural checks for hallucinated dates |
 | Extraction post-processing | `_normalize`, `_contains`, `_word_in` (string helpers); `recover_missed_skills`, `recover_email`, `filter_hallucinated_extraction` |
 | Claimed-years regex | `_YEARS_PATTERNS` + `extract_claimed_years` — folded into the Extraction post-processing section since it operates on `resume_text` |
-| Cosmetic cleanup | `clean_name` (kerning repair), `drop_empty_roles`, `filter_education` (`_DEGREE_KEYWORDS`) — its own section, presentation-only, no score impact |
+| Cosmetic cleanup | `clean_name` (kerning repair), `drop_empty_roles`, `filter_education` (`_DEGREE_KEYWORDS`), `drop_non_certifications` (role-vs-credential guard) |
 | Sub-scores + combination | Dedicated "Scoring" section: `compute_relevant_years`, `compute_skills_match_score`, `compute_experience_match_score`, seniority block (`_SENIORITY_RANK`, `_RANK_TITLE_KEYWORDS`, `_infer_candidate_rank`, `compute_seniority_score`), `combine_subscores` (50/30/20 weighted sum) |
 | Modules | `JDParser` and `ResumeAnalyser` — the orchestration. `ResumeAnalyser.forward` runs the five phases in order |
 
@@ -167,6 +173,9 @@ Array of per-candidate result objects (or error stubs if a candidate failed). Wr
 | Compute years-of-*relevant*-experience | | ✓ |
 | Extract claimed-years figure from resume header | | ✓ |
 | Match candidate skills against JD required/nice | | ✓ |
+| Score each skill by evidence (project/role/cert/listed) | | ✓ |
+| Classify a KNOWN cert (cache / official `_patterns` / heuristic) | | ✓ |
+| Classify an UNKNOWN cert (one-time enrichment, then cached) | ✓ | |
 | Compute skills / experience / seniority sub-scores | | ✓ |
 | Produce rationale | ✓ | |
 | Combine sub-scores into overall_score | | ✓ |

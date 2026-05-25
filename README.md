@@ -10,6 +10,7 @@ Given a resume PDF and a job description PDF, the pipeline produces:
 - A **years-of-experience** number computed from the actual work-history dates (merge-intervals over parsed dates, not the LLM's guess).
 - A **years-of-relevant-experience** number, weighted by how much of the candidate's stack overlaps with the JD's required skills via a curated synonym map.
 - A **fit assessment** with three sub-scores (skills / experience / seniority, each 0-100), all computed in Python and combined deterministically into an overall 0-100 score. The LLM's only role at this stage is to write a 2-3 sentence rationale narrating the numbers.
+- **Evidence-weighted skills**: each required skill is scored 0–1 by *where it shows up* — demonstrated in a project/role, held as a professional certification, or merely listed. "AWS shipped in two projects" outscores "AWS in the skills list," and the output separates `demonstrated` from `claimed_only`.
 - **3-5 score-calibrated suggestions** — pivot recommendations for poor fits, gap-filling for moderate fits, polish for strong fits.
 
 ## Pipeline
@@ -51,6 +52,7 @@ Given a resume PDF and a job description PDF, the pipeline produces:
    │  • reconcile_years               │  │
    │  • compute_relevant_years        │  │
    │  • match_skills (required+nice)  │  │
+   │  • build_evidence_map ◄── cert_knowledge.json
    │  • compute_skills_match_score    │  │
    │  • compute_experience_match_score│  │
    │  • compute_seniority_score       │  │
@@ -89,6 +91,7 @@ Given a resume PDF and a job description PDF, the pipeline produces:
 | `resume_analyser.py` | Schemas, signatures, all Python helpers, the two DSPy modules |
 | `test_analyser.py` | Runner: reads PDFs, caches JD parses, runs the pipeline, handles 429s, saves JSON |
 | `requirements_cache.json` | Auto-created — parsed `JobRequirements` per JD, reused across runs |
+| `cert_knowledge.json` | Cert tier/validity knowledge — `_patterns` (official-source rules) + learned instances; grows over runs |
 | `analyser_results.json` | Auto-created — per-candidate profile + assessment + suggestions, written incrementally |
 | `ARCHITECTURE.md` | What's handled by what, and why |
 
@@ -126,6 +129,8 @@ The original pipeline let the LLM produce everything; the current version moves 
 | JD parse | LLM |
 | Profile extraction (structure) | LLM |
 | Required-skill matching | **Python** (set arithmetic + curated `SYNONYMS`) |
+| Skill evidence weighting (project/role/cert/listed) | **Python** (`build_evidence_map`) |
+| Cert tier + recency | **Python** (`cert_knowledge.json` patterns, web-seeded) |
 | Years of experience | **Python** (merge-intervals over parsed dates) |
 | Years of *relevant* experience | **Python** (total × match ratio) |
 | Seniority alignment | **Python** (title rank vs JD-target rank) |
@@ -150,6 +155,35 @@ The original pipeline let the LLM produce everything; the current version moves 
 ### All sub-scores in Python; LLM only writes the rationale
 
 Every numeric score — skills, experience, seniority, overall — is computed deterministically in Python from the matched/missing lists and the year metrics. Across multiple runs the LLM consistently inflated `skills_match_score` (Aakash 5/8 matched → 85; Divya 8/14 → 85) even when handed Python-computed matched/missing as input. Moving the formula to Python ends that. `AssessFit` is now a single-output module: a 2-3 sentence rationale that references specific skills and acknowledges unverified dates when `dates_extracted_ok` is False.
+
+### Evidence-weighted skill matching
+
+`skills_match_score` is no longer a binary "has it / doesn't." `build_evidence_map` scores each required skill 0–1 by the *strongest* place it appears, plus a small bonus when several sources corroborate:
+
+| Evidence | Weight |
+|---|---|
+| High-reputation credential — professional cert *or* top course (DeepLearning.AI, etc.), current | 0.95 |
+| Used in a paid role (`work_history[].stack`) | 0.90 |
+| Used in a project (`projects[].tech`) | 0.85 |
+| Medium-reputation cert/course, current (e.g. Coursera) | 0.60 |
+| Low-reputation completion (e.g. random Udemy) | 0.45 |
+| Listed in the skills section only | 0.30 |
+| Stale credential (past validity) | decays −0.30, floor 0.40 |
+| Absent | 0.00 |
+
+Credentials weight on **reputation**, not just tier — a respected course can rival or beat a project, an unbranded completion can't. And a certification **expands into the skills it validates**, not just its title: "Generative AI with LLMs (DeepLearning.AI)" backs `Transformers`/`LLM`/`Prompt Engineering` even though none of those words are in the cert name. So a required skill is evidenced if it shows up in the skills list, a project, a role, **or** a credential that covers it.
+
+`skills_match_score` = mean evidence × 100, and `years_relevant_experience` is weighted by the same evidence sum — so a skill that's only *listed* contributes far less than one *demonstrated*. The assessment splits required skills into `demonstrated` (≥ 0.80) vs `claimed_only` vs `missing`, and exposes the per-skill `skill_evidence` map.
+
+### Certification knowledge base (`cert_knowledge.json`)
+
+Cert tier and shelf-life come from a self-growing knowledge file, structured like the JD cache:
+
+- **`_patterns`** — official-source-verified rules (AWS/GCP/Azure/CKA/Red Hat/Coursera tiers and validity windows), matched as substrings of the cert name. Specific patterns first, generic vendor fallbacks last.
+- **Learned instances** — flat keys cached as real certs are seen, so each unique cert is resolved once.
+- **One-time LLM enrichment** — an unseen cert triggers a single Groq call (cheap 8B model) that returns its tier, **reputation**, **the skills it validates**, and validity; the result is cached forever. This is what gives "Generative AI with LLMs" its skill list and high reputation instead of a bare guess. Set `ENRICH_UNKNOWN_CERTS = False` to disable (falls back to keyword heuristic).
+
+Resolution order on lookup: learned instance → `_patterns` → LLM enrichment → keyword heuristic. Recency: a dated cert decays past its validity window (AWS/Red Hat 3y, GCP/CKA 2y, Azure 1y); undated certs are treated as current. The pipeline never browses the web — enrichment uses the model's own knowledge; the `_patterns` layer is refreshed from official sources out of band (my web tools, or a future Tavily/Serper resolver — there's a clean seam in `classify_cert`).
 
 ### Date-extraction integrity flag
 

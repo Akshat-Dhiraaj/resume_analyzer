@@ -20,7 +20,9 @@ role's stack honest about what the candidate claims as a skill.
 """
 
 import datetime
+import json
 import re
+from pathlib import Path
 import dspy
 from dateutil import parser as dateparser
 from pydantic import BaseModel, Field
@@ -60,6 +62,19 @@ class WorkExperience(BaseModel):
                     "can't graft popular tokens onto every role.",
     )
 
+class Project(BaseModel):
+    name: str
+    tech: list[str] = Field(
+        default_factory=list,
+        description="Technologies/tools actually used IN THIS project, read "
+                    "from the project's bullets. Drives 'demonstrated' evidence.",
+    )
+
+class Certification(BaseModel):
+    name: str
+    issuer: str = Field(default="", description="Issuing body, e.g. 'Amazon Web Services', 'Coursera'.")
+    year: str = Field(default="", description="Year obtained (YYYY) if stated, else empty.")
+
 class ResumeProfile(BaseModel):
     name: str
     email: str | None = None
@@ -76,6 +91,8 @@ class ResumeProfile(BaseModel):
     technical_skills: list[str]
     soft_skills: list[str]
     education: list[str]
+    projects: list[Project] = Field(default_factory=list)
+    certifications: list[Certification] = Field(default_factory=list)
 
 class JobRequirements(BaseModel):
     role_title: str
@@ -104,10 +121,25 @@ class FitAssessment(BaseModel):
     skills_match_score: int = Field(default=0, ge=0, le=100)
     experience_match_score: int = Field(default=0, ge=0, le=100)
     seniority_match_score: int = Field(default=0, ge=0, le=100)
-    # Python-computed via curated synonym matching (deterministic):
+    # Python-computed via curated synonym matching + evidence weighting:
     matched_required: list[str] = Field(default_factory=list)
     missing_required: list[str] = Field(default_factory=list)
     matched_nice_to_have: list[str] = Field(default_factory=list)
+    # Evidence breakdown of the matched required skills:
+    demonstrated: list[str] = Field(
+        default_factory=list,
+        description="Required skills backed by strong evidence — used in a "
+                    "project/role, or held as a professional certification.",
+    )
+    claimed_only: list[str] = Field(
+        default_factory=list,
+        description="Required skills present only in the skills list (or a "
+                    "foundational/stale cert) with no demonstrated usage.",
+    )
+    skill_evidence: dict[str, float] = Field(
+        default_factory=dict,
+        description="Per-required-skill evidence score, 0.0–1.0.",
+    )
     strengths: list[str] = Field(default_factory=list)
     gaps: list[str] = Field(default_factory=list)
     rationale: str = ""
@@ -172,6 +204,23 @@ class ExtractProfile(dspy.Signature):
       - Include only post-secondary entries (B.Tech, B.E., B.Sc., M.Sc.,
         M.Tech, MBA, PhD, diploma). Skip 10th/12th/school entries.
 
+    For projects:
+      - One entry per project. `name` is the project title.
+      - `tech` = EVERY technology, library, framework, or tool named ANYWHERE
+        in that project's bullets — be exhaustive, not selective. If a bullet
+        says "trained a CNN in PyTorch with OpenCV", tech = ["CNN", "PyTorch",
+        "OpenCV"]. Missing a tool here makes the candidate look weaker than
+        they are downstream, so capture all of them.
+
+    For certifications:
+      - CREDENTIALS AND COURSES ONLY — named certificates, online courses,
+        nanodegrees, specializations. NEVER put job titles, roles, or
+        internships here (e.g. "Data Science Intern", "Software Engineer" are
+        NOT certifications — they belong in work_history).
+      - `name` is the certificate/course title, `issuer` is the awarding body
+        (e.g. "Amazon Web Services", "Coursera", "DeepLearning.AI", "IBM").
+        `year` only if a year is explicitly shown, else leave empty.
+
     For summary_claimed_years: leave at 0.0 — Python will extract this
     from resume_text via regex; you don't need to.
 
@@ -183,14 +232,18 @@ class ExtractProfile(dspy.Signature):
 class AssessFit(dspy.Signature):
     """Write a 2-3 sentence rationale explaining the candidate's fit.
 
-    All sub-scores and the matched/missing lists are PROVIDED to you (computed
+    All sub-scores and the skill lists are PROVIDED to you (computed
     deterministically in Python). You do not produce numbers — you explain
-    them. Reference specific matched skills and specific gaps. If
-    dates_extracted_ok is False, the rationale MUST acknowledge that the
-    candidate's experience figure is unverified."""
+    them. Distinguish DEMONSTRATED skills (proven in a project/role or held
+    as a professional certification) from CLAIMED-ONLY skills (listed but not
+    evidenced) and from MISSING skills. Reward demonstrated depth; be
+    sceptical of skills that are merely listed. If dates_extracted_ok is
+    False, the rationale MUST acknowledge that the experience figure is
+    unverified."""
     profile: ResumeProfile = dspy.InputField()
     requirements: JobRequirements = dspy.InputField()
-    matched_required: list[str] = dspy.InputField()
+    demonstrated: list[str] = dspy.InputField(desc="Required skills proven in projects/roles or a professional cert.")
+    claimed_only: list[str] = dspy.InputField(desc="Required skills listed but not demonstrated.")
     missing_required: list[str] = dspy.InputField()
     skills_match_score: int = dspy.InputField()
     experience_match_score: int = dspy.InputField()
@@ -262,8 +315,8 @@ SYNONYMS: dict[str, list[str]] = {
                           "resnet", "vgg", "yolo", "yolov5", "yolov8", "efficientnet", "mobilenet",
                           "unet", "u-net"],
     "Transformers":     ["transformer", "transformers", "transformer based", "transformer-based",
-                          "transformer-based architectures", "vision transformer", "vit",
-                          "bert", "gpt", "llama", "llama 3", "mistral", "qwen", "whisper", "llm", "llms"],
+                          "transformer-based architectures", "vision transformer", "vision transformers",
+                          "vit", "bert", "gpt", "llama", "llama 3", "mistral", "qwen", "whisper", "llm", "llms"],
     "Hugging Face Transformers": ["hugging face", "huggingface", "hf transformers",
                           "huggingface transformers", "hf"],
     "Machine Learning": ["machine learning", "ml", "scikit-learn", "sklearn",
@@ -302,12 +355,18 @@ def _expand_candidate_stack(skills: set[str]) -> set[str]:
     return out
 
 def candidate_stack(profile: "ResumeProfile") -> set[str]:
-    """All skills the candidate has demonstrated, across technical_skills
-    and per-role work-history stack entries."""
+    """All skills the candidate has, across technical_skills, per-role
+    work-history stacks, and project tech lists."""
     stack: set[str] = set(profile.technical_skills)
     for w in profile.work_history:
         stack.update(w.stack)
+    for p in profile.projects:
+        stack.update(p.tech)
     return stack
+
+def _aliases(req: str) -> set[str]:
+    """Lowercased alias set for a required skill (canonical name + synonyms)."""
+    return {a.lower() for a in SYNONYMS.get(req, [req])} | {req.lower()}
 
 def match_skills(stack: set[str], required: list[str]) -> tuple[list[str], list[str]]:
     """Return (matched, missing) where matching uses the curated SYNONYMS map.
@@ -318,8 +377,7 @@ def match_skills(stack: set[str], required: list[str]) -> tuple[list[str], list[
     expanded = _expand_candidate_stack(stack)
     matched, missing = [], []
     for req in required:
-        aliases = {a.lower() for a in SYNONYMS.get(req, [req])} | {req.lower()}
-        if aliases & expanded:
+        if _aliases(req) & expanded:
             matched.append(req)
         else:
             missing.append(req)
@@ -510,6 +568,12 @@ def filter_hallucinated_extraction(profile: "ResumeProfile", resume_text: str) -
             s for s in w.stack
             if _contains(s, src) and _normalize(s) in skill_set
         ])
+    # Project tech: verbatim-grounded + deduped (project use is a strong
+    # evidence signal, so a hallucinated tech here would inflate the score).
+    for p in profile.projects:
+        p.tech = _dedupe([s for s in p.tech if _contains(s, src)])
+    profile.projects = [p for p in profile.projects if p.name.strip()]
+    profile.certifications = [c for c in profile.certifications if c.name.strip()]
     return profile
 
 # Claimed-years extraction (continues the source-text verification theme)
@@ -577,14 +641,277 @@ def drop_empty_roles(work_history: list[WorkExperience]) -> list[WorkExperience]
     work_history entry with a blank role string."""
     return [w for w in work_history if w.role.strip() and w.company.strip()]
 
+# Words that signal a job role rather than a credential.
+_ROLE_WORDS = ("intern", "engineer", "developer", "analyst", "manager",
+               "consultant", "trainee", "officer", "specialist", "lead")
+# Words that confirm something IS a credential (override the role check).
+_CREDENTIAL_WORDS = ("certified", "certificate", "certification", "course",
+                     "nanodegree", "specialization", "bootcamp", "diploma",
+                     "credential", "professional", "associate", "foundational",
+                     "fundamentals", "expert", "exam", "academy", "scholar")
+
+def drop_non_certifications(certs: list[Certification]) -> list[Certification]:
+    """Drop entries that are job titles mis-filed as certifications.
+
+    The LLM sometimes puts a role ('Data Science Intern') in the
+    certifications list. Rule: keep anything with a credential word; drop
+    role-shaped names that lack one; keep everything else (bare course
+    titles like 'Generative AI with LLMs' have neither and are legitimate)."""
+    out = []
+    for c in certs:
+        name = c.name.lower()
+        if any(w in name for w in _CREDENTIAL_WORDS):
+            out.append(c)
+        elif any(w in name for w in _ROLE_WORDS):
+            continue
+        else:
+            out.append(c)
+    return out
+
+# ─────────────────────────────────────────────
+# Skill evidence (cert knowledge base + evidence weighting)
+# ─────────────────────────────────────────────
+# Evidence weights per skill — the strongest signal wins, with a small
+# corroboration bonus when several sources agree.
+EV_WORK          = 0.90   # used in a paid role
+EV_PROJECT       = 0.85   # demonstrated in a project
+EV_LISTED        = 0.30   # self-claimed in the skills list only
+# Credential weight depends on REPUTATION, not just tier: a high-reputation
+# course (DeepLearning.AI, a top-university specialization) or any
+# professional cert can outweigh a project; an unbranded completion can't.
+EV_CRED_HIGH     = 0.95   # professional cert OR high-reputation course, current
+EV_CRED_MED      = 0.60   # medium-reputation cert/course, current
+EV_CRED_LOW      = 0.45   # low-reputation completion (e.g. random Udemy)
+EV_CRED_STALE_PENALTY = 0.30   # subtracted when a dated credential is past validity
+EV_CRED_STALE_FLOOR   = 0.40   # a stale credential never drops below this
+EV_CORROBORATION = 0.05   # bonus per extra independent source
+EV_DEMONSTRATED  = 0.80   # threshold: "demonstrated" vs "claimed only"
+
+# Keyword heuristics for the offline cache-miss resolver.
+_PRO_CERT_KEYWORDS = (
+    "professional", "expert", "specialty", "architect", "cka", "ckad", "cks",
+    "solutions architect", "devops engineer - professional",
+)
+_FOUNDATIONAL_KEYWORDS = (
+    "foundational", "fundamentals", "practitioner", "associate", "essentials",
+    "completion", "introduction", "basics", "beginner", "coursera", "udemy",
+)
+
+CERT_CACHE_PATH = Path(__file__).with_name("cert_knowledge.json")
+
+def load_cert_cache() -> dict:
+    """Load the cert knowledge file. Structure:
+      { "_meta": {...},
+        "_patterns": { "<substring>": {tier, validity_years, ...}, ... },  # official knowledge
+        "<exact normalized cert name>": {...} }                            # learned instances
+    `_patterns` is the curated/official-source layer; the flat keys are
+    instances resolved (and cached) as real certs are seen."""
+    if CERT_CACHE_PATH.exists():
+        try:
+            return json.loads(CERT_CACHE_PATH.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            pass
+    return {"_meta": {}, "_patterns": {}}
+
+def save_cert_cache(cache: dict) -> None:
+    cache.setdefault("_meta", {})["updated"] = datetime.date.today().isoformat()
+    CERT_CACHE_PATH.write_text(json.dumps(cache, indent=2, ensure_ascii=False), encoding="utf-8")
+
+def _instance_count(cache: dict) -> int:
+    return sum(1 for k in cache if not k.startswith("_"))
+
+# Toggle the one-time LLM enrichment of unknown certs (set False in unit tests
+# to avoid token cost). When False, unknown certs fall to the keyword heuristic.
+ENRICH_UNKNOWN_CERTS = True
+
+class CertInfo(BaseModel):
+    """LLM output describing a certification/course."""
+    tier: str = Field(description="'professional' for expert/role exams, else 'foundational'.")
+    reputation: str = Field(description="'high', 'medium', or 'low' — industry regard.")
+    skills: list[str] = Field(default_factory=list, description="Canonical skills the credential validates.")
+    validity_years: int = Field(default=0, description="Years until expiry; 0 = no expiry.")
+    issuer: str = Field(default="")
+
+class ClassifyCertification(dspy.Signature):
+    """Classify a certification or course from its name and issuer using
+    well-known facts about the credential.
+
+    tier: 'professional' for expert / role-based exams (AWS Solutions
+      Architect Professional, CKA, GCP Professional, RHCE); else 'foundational'.
+    reputation: 'high' for respected programs (AWS/GCP/Azure/CNCF/Red Hat,
+      DeepLearning.AI, top universities, IBM); 'low' for unbranded/marketplace
+      completions; else 'medium'.
+    skills: the canonical technologies the credential actually validates
+      (e.g. 'Generative AI with LLMs' → ['LLM', 'Transformers', 'Prompt
+      Engineering', 'RLHF']).
+    validity_years: official recert window if known (AWS/Red Hat 3, GCP/CKA 2,
+      Azure 1), else 0.
+    If you don't recognise it, return foundational / medium / []."""
+    cert_name: str = dspy.InputField()
+    issuer: str = dspy.InputField()
+    info: CertInfo = dspy.OutputField()
+
+_cert_classifier = dspy.ChainOfThought(ClassifyCertification)
+
+def _enrich_cert_via_llm(name: str, issuer: str) -> dict | None:
+    """One-time contextual lookup for an unknown cert, on the cheap 8B model.
+    Returns a rich record (tier, reputation, skills, validity) or None on
+    failure (caller then falls back to the heuristic)."""
+    try:
+        with dspy.context(lm=creative_lm):
+            out = _cert_classifier(cert_name=name, issuer=issuer or "").info
+        tier = "professional" if out.tier.strip().lower().startswith("prof") else "foundational"
+        rep = out.reputation.strip().lower()
+        rep = rep if rep in {"high", "medium", "low"} else "medium"
+        return {
+            "tier": tier, "reputation": rep,
+            "skills": [s for s in out.skills if s and s.strip()],
+            "validity_years": int(out.validity_years or 0),
+            "issuer": out.issuer or issuer or "",
+            "relevance": "high" if rep == "high" else "medium",
+            "source": "llm",
+        }
+    except Exception:
+        return None
+
+def classify_cert(name: str, issuer: str, cache: dict, enrich: bool | None = None) -> dict:
+    """Return cert metadata {tier, reputation, skills, validity_years, ...}.
+
+    Resolution order:
+      1. exact learned instance (fast path for previously-seen certs)
+      2. official `_patterns` layer — first substring pattern matching the
+         cert name (cached as a learned instance for next time)
+      3. one-time LLM enrichment — contextual lookup (tier, reputation, the
+         skills it validates), cached so it's never repeated
+      4. offline keyword heuristic — last resort if enrichment is off/fails
+
+    The file is the durable, growing knowledge store; web-seeded `_patterns`
+    give official-source accuracy, LLM enrichment fills the long tail."""
+    if enrich is None:
+        enrich = ENRICH_UNKNOWN_CERTS
+    key = _normalize(name)
+    hit = cache.get(key)
+    if hit:
+        return hit
+    norm_text = _normalize(f"{name} {issuer}")
+    for pattern, info in cache.get("_patterns", {}).items():
+        if pattern in norm_text:
+            cache[key] = info          # learn the resolved instance
+            return info
+    if enrich:
+        info = _enrich_cert_via_llm(name, issuer)
+        if info:
+            cache[key] = info
+            return info
+    tier = "professional" if any(k in norm_text for k in _PRO_CERT_KEYWORDS) else "foundational"
+    info = {
+        "tier": tier, "reputation": "medium", "skills": [],
+        "issuer": issuer or "", "validity_years": 0,
+        "relevance": "unknown", "source": "heuristic",
+    }
+    cache[key] = info
+    return info
+
+def _parse_year(s: str) -> int | None:
+    m = re.search(r"(19|20)\d{2}", s or "")
+    return int(m.group(0)) if m else None
+
+def _cert_is_stale(info: dict, year: str, today: datetime.date) -> bool:
+    """Undated certs are NOT stale (chosen recency policy). Dated certs are
+    stale past their validity window (cert-specific if known, else 5 years)."""
+    yr = _parse_year(year)
+    if not yr:
+        return False
+    validity = info.get("validity_years") or 0
+    age = today.year - yr
+    return age > validity if validity else age > 5
+
+def cert_weight(info: dict, year: str, today: datetime.date) -> float:
+    """Evidence weight of a credential, by reputation/tier then recency.
+
+    Professional tier OR high reputation → 0.95 (can outweigh a project).
+    Low reputation → 0.45. Otherwise 0.60. A dated credential past its
+    validity window is penalised (floored at 0.40); undated stays current."""
+    tier = info.get("tier", "foundational")
+    rep = (info.get("reputation") or "medium").lower()
+    if tier == "professional" or rep == "high":
+        w = EV_CRED_HIGH
+    elif rep == "low":
+        w = EV_CRED_LOW
+    else:
+        w = EV_CRED_MED
+    if _cert_is_stale(info, year, today):
+        w = max(EV_CRED_STALE_FLOOR, w - EV_CRED_STALE_PENALTY)
+    return round(w, 2)
+
+def build_evidence_map(
+    profile: "ResumeProfile",
+    requirements: JobRequirements,
+    today: datetime.date | None = None,
+) -> dict[str, tuple[float, list[str]]]:
+    """For each required skill, find the strongest evidence and score it 0–1.
+
+    Sources, strongest first: professional cert (current) > work use > project
+    use > professional cert (stale) > foundational cert > skills-list mention.
+    Multiple corroborating sources add a small bonus. Returns
+    {required_skill: (evidence, [source_labels])}."""
+    today = today or datetime.date.today()
+    cache = load_cert_cache()
+    cache_size_before = _instance_count(cache)
+
+    listed  = _expand_candidate_stack(set(profile.technical_skills))
+    work    = _expand_candidate_stack({s for w in profile.work_history for s in w.stack})
+    project = _expand_candidate_stack({s for p in profile.projects for s in p.tech})
+
+    # Classify each cert ONCE (this is where the one-time LLM enrichment fires),
+    # then precompute its weight, the skills it covers, and its label. A cert
+    # backs a required skill if that skill is in the cert's validated-skills
+    # list OR appears in the cert's name.
+    cert_rows = []
+    for c in profile.certifications:
+        info = classify_cert(c.name, c.issuer, cache)
+        covered = _expand_candidate_stack(set(info.get("skills", [])))
+        cert_rows.append((
+            _normalize(c.name),
+            covered,
+            cert_weight(info, c.year, today),
+            f"cert:{info.get('reputation', 'medium')}",
+        ))
+
+    evidence: dict[str, tuple[float, list[str]]] = {}
+    for req in requirements.required_skills:
+        al = _aliases(req)
+        score, sources = 0.0, []
+        if al & project:
+            score = max(score, EV_PROJECT); sources.append("project")
+        if al & work:
+            score = max(score, EV_WORK); sources.append("work")
+        if al & listed:
+            score = max(score, EV_LISTED); sources.append("listed")
+        best_cert, cert_label = 0.0, ""
+        for cname, covered, w, label in cert_rows:
+            if (al & covered) or any(a in cname for a in al):
+                if w > best_cert:
+                    best_cert, cert_label = w, label
+        if best_cert > 0:
+            score = max(score, best_cert); sources.append(cert_label)
+        if len(sources) > 1:
+            score = min(1.0, score + EV_CORROBORATION * (len(sources) - 1))
+        evidence[req] = (round(score, 2), sources)
+
+    if _instance_count(cache) != cache_size_before:
+        save_cert_cache(cache)
+    return evidence
+
 # ─────────────────────────────────────────────
 # Scoring (Python-computed sub-scores + overall combiner)
 # ─────────────────────────────────────────────
-def compute_relevant_years(years_experience: float, matched_count: int, required_count: int) -> float:
-    """Total years × (matched / required) ratio.
+def compute_relevant_years(years_experience: float, effective_matched: float, required_count: int) -> float:
+    """Total years × (effective_matched / required) ratio.
 
-    Takes pre-computed match counts so the caller doesn't recompute
-    `match_skills` (which is already needed for the assessment). If no
+    `effective_matched` is the sum of evidence scores across required skills
+    (a float, not a count) — so a skill that's merely listed contributes
+    less relevant time than one demonstrated in a project or role. If no
     required skills are specified, returns total years unchanged.
 
     Nice-to-have skills are NOT included: they signal fit-bonus, not
@@ -593,15 +920,18 @@ def compute_relevant_years(years_experience: float, matched_count: int, required
     4.3y to 1.3y in the early version."""
     if required_count == 0:
         return years_experience
-    return round(years_experience * matched_count / required_count, 1)
+    return round(years_experience * effective_matched / required_count, 1)
 
-def compute_skills_match_score(matched: list[str], required: list[str]) -> int:
-    """Ratio of matched to required, rounded to integer. 80 if no requirements
-    are specified (defensive). Replaces the LLM sub-score, which inflated
-    consistently (Aakash 5/8 → 85, Divya 8/14 → 85, etc.)."""
-    if not required:
+def compute_skills_match_score(evidence_sum: float, required_count: int) -> int:
+    """Evidence-weighted skills score: mean evidence × 100.
+
+    A skill only listed scores 0.30; demonstrated in a project ~0.85; held as
+    a current professional cert 1.00. So 'AWS listed but never used' no longer
+    counts the same as 'AWS shipped in two projects'. 80 if no requirements
+    (defensive)."""
+    if required_count == 0:
         return 80
-    return round(100 * len(matched) / len(required))
+    return round(100 * evidence_sum / required_count)
 
 def compute_experience_match_score(profile: "ResumeProfile", requirements: JobRequirements) -> int:
     """Years-of-relevant-experience vs min-required, with date-verification cap.
@@ -714,9 +1044,10 @@ class ResumeAnalyser(dspy.Module):
         # are available to back legitimate work_history.stack entries when
         # the strict-subset rule runs.
         profile = self.extract(resume_text=resume_text).profile
-        profile.name         = clean_name(profile.name)
-        profile.work_history = drop_empty_roles(profile.work_history)
-        profile.education    = filter_education(profile.education)
+        profile.name           = clean_name(profile.name)
+        profile.work_history   = drop_empty_roles(profile.work_history)
+        profile.education      = filter_education(profile.education)
+        profile.certifications = drop_non_certifications(profile.certifications)
         profile = recover_missed_skills(profile, resume_text)
         profile = recover_email(profile, resume_text)
         profile = filter_hallucinated_extraction(profile, resume_text)
@@ -728,17 +1059,24 @@ class ResumeAnalyser(dspy.Module):
         computed = compute_years_experience(profile.work_history, today)
         profile.years_experience = reconcile_years(computed, profile.summary_claimed_years)
 
-        # ── Phase 3: deterministic matching, relevance, and all sub-scores ─
-        # match_skills runs once per requirement-set; relevance uses the
-        # already-computed match count instead of recomputing.
-        stack = candidate_stack(profile)
-        matched_required, missing_required = match_skills(stack, requirements.required_skills)
-        matched_nice, _ = match_skills(stack, requirements.nice_to_have_skills)
+        # ── Phase 3: evidence-weighted matching, relevance, and sub-scores ─
+        # build_evidence_map scores each required skill 0–1 by where it shows
+        # up (project/role/cert/listed). matched = any evidence; demonstrated
+        # = strong evidence (>= EV_DEMONSTRATED).
+        evidence = build_evidence_map(profile, requirements, today)
+        matched_required = [s for s, (ev, _) in evidence.items() if ev > 0]
+        missing_required = [s for s, (ev, _) in evidence.items() if ev == 0]
+        demonstrated     = [s for s, (ev, _) in evidence.items() if ev >= EV_DEMONSTRATED]
+        claimed_only     = [s for s, (ev, _) in evidence.items() if 0 < ev < EV_DEMONSTRATED]
+        skill_evidence   = {s: ev for s, (ev, _) in evidence.items()}
+        evidence_sum     = sum(ev for ev, _ in evidence.values())
+
+        matched_nice, _ = match_skills(candidate_stack(profile), requirements.nice_to_have_skills)
 
         profile.years_relevant_experience = compute_relevant_years(
-            profile.years_experience, len(matched_required), len(requirements.required_skills),
+            profile.years_experience, evidence_sum, len(requirements.required_skills),
         )
-        skills_score     = compute_skills_match_score(matched_required, requirements.required_skills)
+        skills_score     = compute_skills_match_score(evidence_sum, len(requirements.required_skills))
         experience_score = compute_experience_match_score(profile, requirements)
         seniority_score  = compute_seniority_score(profile, requirements)
 
@@ -746,7 +1084,8 @@ class ResumeAnalyser(dspy.Module):
         rationale = self.assess(
             profile=profile,
             requirements=requirements,
-            matched_required=matched_required,
+            demonstrated=demonstrated,
+            claimed_only=claimed_only,
             missing_required=missing_required,
             skills_match_score=skills_score,
             experience_match_score=experience_score,
@@ -761,7 +1100,10 @@ class ResumeAnalyser(dspy.Module):
             matched_required=matched_required,
             missing_required=missing_required,
             matched_nice_to_have=matched_nice,
-            strengths=sorted(set(matched_required) | set(matched_nice)),
+            demonstrated=demonstrated,
+            claimed_only=claimed_only,
+            skill_evidence=skill_evidence,
+            strengths=sorted(set(demonstrated) | set(matched_nice)),
             gaps=list(missing_required),
             rationale=rationale,
         )
