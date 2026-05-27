@@ -51,7 +51,7 @@ Given a resume PDF and a job description PDF, the pipeline produces:
    │  • compute_years_experience      │  │
    │  • reconcile_years               │  │
    │  • compute_relevant_years        │  │
-   │  • match_skills (required+nice)  │  │
+   │  • match_skills    ◄── skill_knowledge.json
    │  • build_evidence_map ◄── cert_knowledge.json
    │  • compute_skills_match_score    │  │
    │  • compute_experience_match_score│  │
@@ -90,7 +90,9 @@ Given a resume PDF and a job description PDF, the pipeline produces:
 | `config.py` | Reads `GROQ_API_KEY` from the environment |
 | `resume_analyser.py` | Schemas, signatures, all Python helpers, the two DSPy modules |
 | `test_analyser.py` | Runner: reads PDFs, caches JD parses, runs the pipeline, handles 429s, saves JSON |
+| `run_subset.py` | Budget-safe runner — scores just the 3 AI candidates to `subset_results.json` without touching the main output. Handy for testing changes cheaply |
 | `requirements_cache.json` | Auto-created — parsed `JobRequirements` per JD, reused across runs |
+| `skill_knowledge.json` | Skill-equivalence knowledge — hand-seeded danger cases + 70B-resolved entries (aliases / entailed_by / related_only); grows over runs |
 | `cert_knowledge.json` | Cert tier/validity knowledge — `_patterns` (official-source rules) + learned instances; grows over runs |
 | `analyser_results.json` | Auto-created — per-candidate profile + assessment + suggestions, written incrementally |
 | `ARCHITECTURE.md` | What's handled by what, and why |
@@ -128,7 +130,8 @@ The original pipeline let the LLM produce everything; the current version moves 
 |---|---|
 | JD parse | LLM |
 | Profile extraction (structure) | LLM |
-| Required-skill matching | **Python** (set arithmetic + curated `SYNONYMS`) |
+| Skill equivalence knowledge (aliases/entailments) | **LLM once, cached** (70B → `skill_knowledge.json`) |
+| Required-skill matching (applying that knowledge) | **Python** (typed, directional set arithmetic) |
 | Skill evidence weighting (project/role/cert/listed) | **Python** (`build_evidence_map`) |
 | Cert tier + recency | **Python** (`cert_knowledge.json` patterns, web-seeded) |
 | Years of experience | **Python** (merge-intervals over parsed dates) |
@@ -193,20 +196,49 @@ Resolution order on lookup: learned instance → `_patterns` → LLM enrichment 
 
 `precise_lm` is the default for everything that needs reproducibility (JD parse, extract, assess). `creative_lm` is reserved for advice generation. No 70B → no daily token-cap blocker.
 
-### Synonym-aware matching
+### Skill equivalence: LLM-resolved once, Python-matched always
 
-`match_skills` returns `(matched, missing)` lists derived from set membership against an expanded alias table (e.g., `Selenium WebDriver` → matches `Selenium`; `AWS (EC2, S3, …)` → matches `AWS`; `Tailwind CSS` → matches `CSS3`). The matched list uses the JD's canonical wording, so downstream reports are consistent across candidates for the same JD.
+A skill's equivalences ("AWS ≈ EC2/S3", "K8s = Kubernetes") are a stable fact about the world, not a per-candidate judgement — so they're resolved **once per skill by the 70B model** and cached in `skill_knowledge.json` (same pattern as `cert_knowledge.json`). The per-candidate *match* stays pure deterministic Python. The LLM never decides whether a given candidate has a skill (that was the original over-claiming bug) — it only describes the skill.
+
+Relationships are **typed and directional**:
+
+```json
+"aws": { "aliases": ["amazon web services"],
+         "entailed_by": ["ec2", "s3", "eks", "lambda"],
+         "related_only": ["azure", "gcp"] }     // related_only NEVER matches
+```
+
+`match_skills` matches a required skill if any of its **aliases** or **entailing technologies** appears in the candidate's stack. So `EC2 → satisfies AWS`, `React → satisfies JavaScript`, `k8s → satisfies Kubernetes` — but `Kubernetes ✗ Docker`, `JavaScript ✗ Java`, `REST Assured ✗ RESTful APIs` (those live in `related_only`). The resolver runs a deliberately conservative prompt — anything not clearly a synonym or strict sub-technology goes in `related_only`, so it prefers false-negatives over false-positives. Error-prone cases (Docker/Kubernetes/Java) are hand-seeded with `source: "seed"`; the hand-rolled `SYNONYMS` dict remains as an offline fallback when resolution is disabled.
 
 ## Results
 
-10 Naukri-format resumes against 3 JDs (Full Stack / AI-CV / QA). The deterministic passes produce stable, differentiated scores; re-runs of the same candidate give the same answer because the only LLM stage that touches resume content is extraction, which is now backed by the verbatim filter and recovery passes.
+10 Naukri-format resumes against 3 JDs (Full Stack / AI-CV / QA). With evidence-weighting in place, scores spread **49–88** and track *demonstrated* depth rather than self-claims:
+
+| Candidate | Role | Overall | demo / claimed / missing |
+|---|---|--:|---|
+| Aakash Maddheshiya | AI & CV | 88 | 6 / 1 / 1 |
+| Ashutosh Aman | AI & CV | 84 | 5 / 3 / 0 |
+| Divya Rai | QA | 63 | 7 / 1 / 6 |
+| Tarun Upadhayay | Full Stack | 60 | 5 / 7 / 0 |
+| Vishal Rana | Full Stack | 59 | 5 / 5 / 2 |
+| Abhilash Soni | QA | 58 | 7 / 3 / 4 |
+| Abhishek Majhi | AI & CV | 52 | 1 / 5 / 2 |
+| Sarthak Kesarwani | Full Stack | 50 | 4 / 4 / 4 |
+| Shiv Verma | Full Stack | 49 | 3 / 6 / 3 |
+| Yash Soni | QA | 49 | 4 / 3 / 7 |
+
+The pattern is the intended one: candidates with **real projects + certifications** (Aakash, Ashutosh — 4 projects, 2 course certs each) rise to the top, while candidates who mostly *list* skills without project/role evidence land in the 49–60 band. The split between `demonstrated` and `claimed_only` is what drives the spread.
+
+Reproducibility: every score is Python-computed at temperature 0.0, so re-running a candidate gives the same numbers. The one source of run-to-run variation is a *new* cert triggering a one-time enrichment call — once cached in `cert_knowledge.json`, it's stable.
 
 Track per-candidate output in `analyser_results.json`. To produce a ranked shortlist per JD, sort by `assessment.overall_score`.
 
 ## Known limitations
 
-- **Synonym map is hand-rolled.** Covers the fixture comfortably but won't generalise to every JD. Future work: replace `SYNONYMS` with the EMSI/Lightcast skill DB bundled by [SkillNER](https://github.com/AnasAito/SkillNER) (~34k skills with synonyms).
+- **Skill equivalences are LLM-resolved**, so they can be wrong on niche skills (mitigated by the conservative prompt, the `confidence` field, the `related_only` safe-bucket, hand-seeded danger cases, and per-skill caching for review). For an authoritative source, seed `skill_knowledge.json` from a real ontology (ESCO / [SkillNER](https://github.com/AnasAito/SkillNER)'s Lightcast DB) and use the LLM only for gaps.
 - **No DSPy `Refine` retry loop yet.** The verbatim filter is a silent drop; wrapping `ExtractProfile` in `dspy.Refine` with a reward function that asserts "every claimed skill appears in resume_text" would convert it to a feedback loop. See [DSPy assertions docs](https://dspy.ai/learn/programming/7-assertions/).
+- **Evidence depth is only as good as extraction.** A skill counts as `demonstrated` only if the extractor attached it to a project/role. When project `tech` lists come back sparse, genuinely-used skills can sink to `claimed_only` and understate a strong candidate (observed: a CV/ML engineer whose PyTorch landed in the skills list but not under his projects). The exhaustive-project-tech prompt rule mitigates this; a `dspy.Refine` retry would close it further.
+- **Cert→skill linking is name + enriched-skills based.** A cert backs a skill if the skill is in the cert's title or its enriched `skills` list. A credential that proves a skill without either won't link.
 - **No automated optimisation.** `BootstrapFewShot` / `MIPROv2` aren't wired in. Add once you have ~15+ hand-labelled (resume, JD, expected sub-scores) triples.
 - **Output is per-candidate, not ranked.** Each candidate is scored independently. For a ranked leaderboard, sort `analyser_results.json` by `assessment.overall_score` per JD — that's a one-liner.
 

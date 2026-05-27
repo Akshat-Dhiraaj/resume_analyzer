@@ -286,9 +286,10 @@ SYNONYMS: dict[str, list[str]] = {
     "Express.js":       ["express.js", "express", "expressjs", "express js"],
     "React.js":         ["react.js", "react", "reactjs", "react 18", "react hooks", "next.js", "nextjs"],
     "MongoDB":          ["mongodb", "mongo", "mongoose"],
-    "RESTful APIs":     ["restful apis", "rest apis", "rest api", "restful", "rest assured", "rest"],
+    "RESTful APIs":     ["restful apis", "rest apis", "rest api", "restful", "rest"],
     "AWS":              ["aws", "amazon web services", "ec2", "s3", "iam", "aws secrets manager", "aws (ec2, s3, secrets manager, iam)"],
-    "Docker":           ["docker", "kubernetes", "k8s"],
+    "Docker":           ["docker", "containerization", "containers"],
+    "Kubernetes":       ["kubernetes", "k8s", "kubectl", "helm", "eks", "gke", "aks"],
     "CI/CD":            ["ci/cd", "ci-cd", "cicd", "jenkins", "gitlab ci", "github actions", "bitbucket pipelines", "ci/cd pipelines", "ci/cd pipeline"],
     "Git":              ["git", "github", "gitlab", "bitbucket"],
     "GraphQL":          ["graphql"],
@@ -364,20 +365,110 @@ def candidate_stack(profile: "ResumeProfile") -> set[str]:
         stack.update(p.tech)
     return stack
 
-def _aliases(req: str) -> set[str]:
-    """Lowercased alias set for a required skill (canonical name + synonyms)."""
-    return {a.lower() for a in SYNONYMS.get(req, [req])} | {req.lower()}
+# ── Skill knowledge base: LLM-resolved equivalences, cached, Python-applied ──
+# A skill's equivalences are a stable fact about the world (AWS ≈ EC2/S3), not
+# a per-candidate judgement — so we resolve them ONCE with a strong model and
+# cache them, exactly like cert_knowledge.json. The per-candidate MATCH stays
+# pure deterministic Python. This avoids the LLM over-claiming a candidate's
+# skills (the original bug) while getting its world knowledge for free.
+SKILL_CACHE_PATH = Path(__file__).with_name("skill_knowledge.json")
+RESOLVE_UNKNOWN_SKILLS = True   # set False in tests to stay offline (uses SYNONYMS fallback)
 
-def match_skills(stack: set[str], required: list[str]) -> tuple[list[str], list[str]]:
-    """Return (matched, missing) where matching uses the curated SYNONYMS map.
+class SkillEquivalence(BaseModel):
+    """LLM output: how a single skill maps to résumé tokens for matching."""
+    aliases: list[str] = Field(default_factory=list,
+        description="True synonyms / abbreviations — bidirectional equivalents (JavaScript↔JS).")
+    entailed_by: list[str] = Field(default_factory=list,
+        description="More specific techs whose presence IMPLIES this skill (AWS ← EC2, S3, Lambda).")
+    related_only: list[str] = Field(default_factory=list,
+        description="Related but NOT equivalent — must NOT count as having the skill (Docker vs Kubernetes).")
+    confidence: str = Field(default="medium", description="'high', 'medium', or 'low'.")
 
-    A required skill matches if any of its aliases (lowercased) appears as an
-    exact element of the candidate's expanded stack. Preserves the JD's
-    canonical wording in the returned lists."""
+class ResolveSkillEquivalences(dspy.Signature):
+    """Given ONE technical skill, list its equivalences for résumé matching.
+
+    Be CONSERVATIVE and precise — prefer false-negatives over false-positives:
+      - aliases: only widely-accepted synonyms/abbreviations (Kubernetes↔K8s).
+      - entailed_by: specific technologies whose presence on a résumé reliably
+        IMPLIES this skill (AWS ← EC2/S3/Lambda; React ← Next.js).
+      - related_only: things commonly confused as equivalent but that are NOT
+        (Docker vs Kubernetes; Java vs JavaScript). When unsure, put it HERE.
+    Anything that is not clearly a synonym or a strict sub-technology goes in
+    related_only, never in aliases/entailed_by."""
+    skill: str = dspy.InputField()
+    equivalence: SkillEquivalence = dspy.OutputField()
+
+_skill_resolver = dspy.ChainOfThought(ResolveSkillEquivalences)
+
+def load_skill_cache() -> dict:
+    if SKILL_CACHE_PATH.exists():
+        try:
+            return json.loads(SKILL_CACHE_PATH.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            pass
+    return {"_meta": {}}
+
+def save_skill_cache(cache: dict) -> None:
+    cache.setdefault("_meta", {})["updated"] = datetime.date.today().isoformat()
+    SKILL_CACHE_PATH.write_text(json.dumps(cache, indent=2, ensure_ascii=False), encoding="utf-8")
+
+def _resolve_skill_via_llm(skill: str) -> dict | None:
+    """Resolve one skill's equivalences on the strong (70B) model. None on failure."""
+    try:
+        with dspy.context(lm=precise_lm):
+            eq = _skill_resolver(skill=skill).equivalence
+        return {
+            "canonical": skill,
+            "aliases":      [a for a in eq.aliases if a and a.strip()],
+            "entailed_by":  [a for a in eq.entailed_by if a and a.strip()],
+            "related_only": [a for a in eq.related_only if a and a.strip()],
+            "confidence": (eq.confidence or "medium").strip().lower(),
+            "source": "llm-70b",
+        }
+    except Exception:
+        return None
+
+def resolve_skill(skill: str, cache: dict, resolve: bool | None = None) -> dict:
+    """Return the equivalence record for a skill: cache → 70B resolve → SYNONYMS
+    fallback. The fallback is NOT cached, so it re-resolves once the LLM is
+    available again."""
+    if resolve is None:
+        resolve = RESOLVE_UNKNOWN_SKILLS
+    key = _normalize(skill)
+    hit = cache.get(key)
+    if hit and not key.startswith("_"):
+        return hit
+    if resolve:
+        rec = _resolve_skill_via_llm(skill)
+        if rec:
+            cache[key] = rec
+            return rec
+    return {  # transient fallback, not written to cache
+        "canonical": skill, "aliases": SYNONYMS.get(skill, []),
+        "entailed_by": [], "related_only": [], "confidence": "low",
+        "source": "synonyms-fallback",
+    }
+
+def skill_match_set(skill: str, cache: dict, resolve: bool | None = None) -> set[str]:
+    """Lowercased tokens that count as evidence of `skill`: its canonical name,
+    aliases, and things that entail it. Excludes `related_only` by design."""
+    rec = resolve_skill(skill, cache, resolve)
+    toks = {skill.lower().strip()}
+    toks |= {a.lower().strip() for a in rec.get("aliases", [])}
+    toks |= {a.lower().strip() for a in rec.get("entailed_by", [])}
+    return {t for t in toks if t}
+
+def match_skills(stack: set[str], required: list[str], skill_cache: dict | None = None) -> tuple[list[str], list[str]]:
+    """Return (matched, missing). A required skill matches if any of its
+    aliases or entailing technologies (from the skill knowledge base) appears
+    in the candidate's expanded stack. Directional: EC2 → matches AWS, but a
+    bare AWS does not match an EC2 requirement unless EC2 is listed."""
+    if skill_cache is None:
+        skill_cache = load_skill_cache()
     expanded = _expand_candidate_stack(stack)
     matched, missing = [], []
     for req in required:
-        if _aliases(req) & expanded:
+        if skill_match_set(req, skill_cache) & expanded:
             matched.append(req)
         else:
             missing.append(req)
@@ -848,28 +939,31 @@ def build_evidence_map(
     profile: "ResumeProfile",
     requirements: JobRequirements,
     today: datetime.date | None = None,
+    skill_cache: dict | None = None,
 ) -> dict[str, tuple[float, list[str]]]:
     """For each required skill, find the strongest evidence and score it 0–1.
 
-    Sources, strongest first: professional cert (current) > work use > project
-    use > professional cert (stale) > foundational cert > skills-list mention.
-    Multiple corroborating sources add a small bonus. Returns
+    Sources, strongest first: high-reputation credential (current) > work use >
+    project use > medium/low credential > skills-list mention. Multiple
+    corroborating sources add a small bonus. Skill equivalence comes from the
+    LLM-resolved skill knowledge base (typed, directional). Returns
     {required_skill: (evidence, [source_labels])}."""
     today = today or datetime.date.today()
-    cache = load_cert_cache()
-    cache_size_before = _instance_count(cache)
+    if skill_cache is None:
+        skill_cache = load_skill_cache()
+    cert_cache = load_cert_cache()
+    cert_size_before = _instance_count(cert_cache)
 
     listed  = _expand_candidate_stack(set(profile.technical_skills))
     work    = _expand_candidate_stack({s for w in profile.work_history for s in w.stack})
     project = _expand_candidate_stack({s for p in profile.projects for s in p.tech})
 
-    # Classify each cert ONCE (this is where the one-time LLM enrichment fires),
-    # then precompute its weight, the skills it covers, and its label. A cert
-    # backs a required skill if that skill is in the cert's validated-skills
-    # list OR appears in the cert's name.
+    # Classify each cert ONCE (where one-time cert enrichment fires); precompute
+    # its weight, the skills it covers, and its label. A cert backs a required
+    # skill if that skill is in the cert's validated-skills list OR its name.
     cert_rows = []
     for c in profile.certifications:
-        info = classify_cert(c.name, c.issuer, cache)
+        info = classify_cert(c.name, c.issuer, cert_cache)
         covered = _expand_candidate_stack(set(info.get("skills", [])))
         cert_rows.append((
             _normalize(c.name),
@@ -880,17 +974,17 @@ def build_evidence_map(
 
     evidence: dict[str, tuple[float, list[str]]] = {}
     for req in requirements.required_skills:
-        al = _aliases(req)
+        match = skill_match_set(req, skill_cache)   # aliases + entailing techs
         score, sources = 0.0, []
-        if al & project:
+        if match & project:
             score = max(score, EV_PROJECT); sources.append("project")
-        if al & work:
+        if match & work:
             score = max(score, EV_WORK); sources.append("work")
-        if al & listed:
+        if match & listed:
             score = max(score, EV_LISTED); sources.append("listed")
         best_cert, cert_label = 0.0, ""
         for cname, covered, w, label in cert_rows:
-            if (al & covered) or any(a in cname for a in al):
+            if (match & covered) or any(a in cname for a in match):
                 if w > best_cert:
                     best_cert, cert_label = w, label
         if best_cert > 0:
@@ -899,8 +993,8 @@ def build_evidence_map(
             score = min(1.0, score + EV_CORROBORATION * (len(sources) - 1))
         evidence[req] = (round(score, 2), sources)
 
-    if _instance_count(cache) != cache_size_before:
-        save_cert_cache(cache)
+    if _instance_count(cert_cache) != cert_size_before:
+        save_cert_cache(cert_cache)
     return evidence
 
 # ─────────────────────────────────────────────
@@ -1061,9 +1155,14 @@ class ResumeAnalyser(dspy.Module):
 
         # ── Phase 3: evidence-weighted matching, relevance, and sub-scores ─
         # build_evidence_map scores each required skill 0–1 by where it shows
-        # up (project/role/cert/listed). matched = any evidence; demonstrated
-        # = strong evidence (>= EV_DEMONSTRATED).
-        evidence = build_evidence_map(profile, requirements, today)
+        # up (project/role/cert/listed), using the LLM-resolved skill knowledge
+        # base for equivalences. matched = any evidence; demonstrated = strong
+        # evidence (>= EV_DEMONSTRATED). The skill cache is loaded once here and
+        # saved after, so any new skills resolved this run persist.
+        skill_cache = load_skill_cache()
+        skills_before = sum(1 for k in skill_cache if not k.startswith("_"))
+
+        evidence = build_evidence_map(profile, requirements, today, skill_cache)
         matched_required = [s for s, (ev, _) in evidence.items() if ev > 0]
         missing_required = [s for s, (ev, _) in evidence.items() if ev == 0]
         demonstrated     = [s for s, (ev, _) in evidence.items() if ev >= EV_DEMONSTRATED]
@@ -1071,7 +1170,9 @@ class ResumeAnalyser(dspy.Module):
         skill_evidence   = {s: ev for s, (ev, _) in evidence.items()}
         evidence_sum     = sum(ev for ev, _ in evidence.values())
 
-        matched_nice, _ = match_skills(candidate_stack(profile), requirements.nice_to_have_skills)
+        matched_nice, _ = match_skills(candidate_stack(profile), requirements.nice_to_have_skills, skill_cache)
+        if sum(1 for k in skill_cache if not k.startswith("_")) != skills_before:
+            save_skill_cache(skill_cache)
 
         profile.years_relevant_experience = compute_relevant_years(
             profile.years_experience, evidence_sum, len(requirements.required_skills),

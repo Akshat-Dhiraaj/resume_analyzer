@@ -28,7 +28,8 @@ which gives the high-level flow.
 | Reconciling computed years vs the resume's prose claim | `reconcile_years()` heuristic | LLM-extracted start dates can be wrong; the prose claim is a sanity-check ceiling. Rule: if computed > claimed + 2.0 years, the claim wins |
 | Extracting the claimed-years figure | `extract_claimed_years()` — regex over `resume_text[:600]` | Three patterns: Naukri header tag (`3y 1m`), `X+ years experience`, bare `X years`. Reliable enough that the LLM doesn't need to populate `summary_claimed_years` at all |
 | Weighting years by relevance to the target JD | `compute_relevant_years()` — total years × (evidence_sum / required_count) | Weighted by the same evidence sum used for the skills score, so a merely-listed skill contributes less relevant time than a demonstrated one. Nice-to-haves are NOT in this calculation: they signal fit-bonus, not relevance |
-| Skill matching against the JD | `match_skills()` — set membership over an expanded alias table | Replaces an earlier LLM step that hallucinated matches (Yash's `Selenium WebDriver` was wrongly flagged as missing `Selenium`). Now `(matched, missing)` is deterministic and uses the JD's canonical wording |
+| Resolving a skill's equivalences | `resolve_skill()` → `ResolveSkillEquivalences` on 70B, cached in `skill_knowledge.json` | Equivalence ("AWS ≈ EC2/S3", "K8s = Kubernetes") is a stable world-fact, not a per-candidate call — resolve once with a conservative prompt and cache. The LLM describes the *skill*, never judges the *candidate* |
+| Skill matching against the JD | `match_skills()` / `skill_match_set()` — typed, directional set membership over `skill_knowledge.json` | Earlier LLM-decided matching hallucinated (Yash's `Selenium WebDriver` flagged as missing `Selenium`; Sarthak got false React). Now deterministic: a required skill matches on its `aliases` or `entailed_by` tokens; `related_only` (Docker vs Kubernetes, Java vs JavaScript) never matches. Directional — EC2⇒AWS, not vice-versa |
 | Splitting compound skills (`AWS (EC2, S3, IAM)`) into atoms | `_expand_candidate_stack()` — `re.split` on `()&/-,` | Makes synonym matching forgiving of resume formatting without resorting to substring search |
 | Scoring each required skill by evidence | `build_evidence_map()` — 0–1 per skill from where it appears (project/role/cert/listed) + corroboration bonus | Binary "has it" rewards a candidate who merely lists AWS the same as one who shipped it. Evidence weighting separates demonstrated depth from self-claims. A skill is evidenced if it's in the skills list, a project, a role, OR a credential that *validates* it (certs expand into their skills, not just their title) |
 | Cert tier, reputation, skills, shelf-life | `classify_cert()` + `cert_weight()` over `cert_knowledge.json` (learned instance → `_patterns` official rules → one-time LLM enrichment → keyword heuristic) | Weight depends on REPUTATION not just tier: a professional cert or high-reputation course → 0.95 (beats a project), medium → 0.60, low → 0.45. Unseen certs get a single cheap-model enrichment call (`_enrich_cert_via_llm`) returning reputation + validated skills + validity, cached forever. Dated certs decay past validity (AWS/Red Hat 3y, GCP/CKA 2y, Azure 1y); undated treated as current |
@@ -39,7 +40,7 @@ which gives the high-level flow.
 | Combining sub-scores into `overall_score` | `combine_subscores()` — Python weighted sum (50/30/20) | Reproducible, debuggable, doesn't depend on LLM whim |
 | Generating concrete improvement suggestions | `dspy.ChainOfThought(GenerateAdvice)` on `creative_lm` (temp 0.2) | Generative writing benefits from mild variability; score-band-aware behaviour enforced by the docstring |
 | Score-aware advice branching | Pass `overall_score` as input to `GenerateAdvice`; signature docstring describes the three bands | Without this, low-fit candidates got "add Express.js section"; now they get "consider pivoting to a better-aligned role family" |
-| Validating LLM output structure | Pydantic `BaseModel` subclasses (`ResumeProfile`, `WorkExperience`, `JobRequirements`, `_AssessScores`, `FitAssessment`) | DSPy parses typed outputs natively; on parse failure it retries automatically |
+| Validating LLM output structure | Pydantic `BaseModel` subclasses (`ResumeProfile`, `WorkExperience`, `Project`, `Certification`, `JobRequirements`, `CertInfo`, `_AssessRationale`, `FitAssessment`) | DSPy parses typed outputs natively; on parse failure it retries automatically |
 | Score range enforcement (0-100) | `Field(ge=0, le=100)` on every score | Pydantic rejects out-of-range values |
 | Stage-level model selection | Default is `precise_lm` (temp 0.0); `dspy.context(lm=creative_lm)` overrides for advice only | Only one override block in `forward()` |
 | Groq rate-limit handling | `call_with_retry()` in `test_analyser.py` | Parses Groq's "try again in Xs" hint from 429s; bounded retries; re-raises the last exception explicitly |
@@ -83,11 +84,14 @@ which gives the high-level flow.
         │                                          summary_claimed_years)
         │
         ├── Phase 3: evidence-weighted matching, relevance, and sub-scores
-        │     evidence = build_evidence_map(profile, requirements, today)  # {skill: (0–1, sources)}
-        │       └─ uses cert_knowledge.json for cert tier + recency
+        │     skill_cache = load_skill_cache()                  # LLM-resolved equivalences
+        │     evidence = build_evidence_map(profile, requirements, today, skill_cache)
+        │       ├─ skill_knowledge.json for aliases / entailed_by / related_only
+        │       └─ cert_knowledge.json  for cert tier + reputation + recency
         │     demonstrated / claimed_only / missing  ← split by evidence threshold
         │     evidence_sum = Σ evidence
-        │     matched_nice, _ = match_skills(candidate_stack(profile), nice_to_have_skills)
+        │     matched_nice, _ = match_skills(candidate_stack(profile), nice_to_have_skills, skill_cache)
+        │     save_skill_cache(skill_cache)  # if new skills were resolved
         │     years_relevant_experience = compute_relevant_years(years_experience,
         │                                          evidence_sum, len(required_skills))
         │     skills_score     = compute_skills_match_score(evidence_sum, len(required_skills))
@@ -125,8 +129,8 @@ Loads `GROQ_API_KEY` from `.env` via `python-dotenv`. Single source of truth for
 | LM setup | `precise_lm` (`llama-3.3-70b-versatile`, temp 0.0) is the global default via `dspy.configure(lm=precise_lm)` — used for JD parse, profile extraction, rationale narration. `creative_lm` (`llama-3.1-8b-instant`, temp 0.2) overrides via `dspy.context` for `GenerateAdvice` only. The split keeps a 10-candidate run inside Groq's 100K TPD cap on 70B |
 | Pydantic schemas | `WorkExperience`, `Project`, `Certification`, `ResumeProfile`, `JobRequirements`, `_AssessRationale`, `FitAssessment`. Schemas are both `OutputField` types and the input contract for downstream stages |
 | Skill evidence | `cert_knowledge.json` loader/saver, `classify_cert`, `cert_weight`, `build_evidence_map`, and the `EV_*` weight constants — the evidence layer between matching and scoring |
-| Signatures | `ParseJobDescription`, `ExtractProfile`, `AssessFit`, `GenerateAdvice`. The docstring of each is the instruction passed to the model |
-| Skill matching | `SYNONYMS` map + `_expand_candidate_stack`, `candidate_stack`, `match_skills` — pure Python, synonym-aware set arithmetic |
+| Signatures | `ParseJobDescription`, `ExtractProfile`, `AssessFit`, `GenerateAdvice`, plus the knowledge-resolvers `ResolveSkillEquivalences` and `ClassifyCertification`. The docstring of each is the instruction passed to the model |
+| Skill matching | `skill_knowledge.json` (LLM-resolved equivalences) + `resolve_skill`, `skill_match_set`, `match_skills`, `_expand_candidate_stack`, `candidate_stack`. `SYNONYMS` remains as the offline fallback |
 | Date math | `_parse_ym`, `compute_years_experience`, `reconcile_years`, `dates_present` — `dateutil` for fuzzy/partial dates, merge-intervals for years, structural checks for hallucinated dates |
 | Extraction post-processing | `_normalize`, `_contains`, `_word_in` (string helpers); `recover_missed_skills`, `recover_email`, `filter_hallucinated_extraction` |
 | Claimed-years regex | `_YEARS_PATTERNS` + `extract_claimed_years` — folded into the Extraction post-processing section since it operates on `resume_text` |
@@ -150,6 +154,14 @@ Loads `GROQ_API_KEY` from `.env` via `python-dotenv`. Single source of truth for
 
 Map of `{jd_filename: JobRequirements.model_dump()}`. Lives at the project root. Delete it to force re-parsing on the next run.
 
+### `skill_knowledge.json` (seed + auto-grown)
+
+Keyed by normalized canonical skill → `{aliases, entailed_by, related_only, confidence, source}`. Hand-seeded entries (`source: "seed"`) anchor error-prone cases (Docker/Kubernetes/Java); the rest are filled by the 70B resolver (`source: "llm-70b"`) once per skill and cached. Delete an entry to force re-resolution.
+
+### `cert_knowledge.json` (seed + auto-grown)
+
+`_patterns` (official-source rules) + learned instances `{tier, reputation, skills, validity_years, …}`. Same lifecycle as the skill KB.
+
 ### `analyser_results.json` (auto-generated)
 
 Array of per-candidate result objects (or error stubs if a candidate failed). Written after each candidate, so partial runs are preserved.
@@ -172,7 +184,8 @@ Array of per-candidate result objects (or error stubs if a candidate failed). Wr
 | Pick between computed vs claimed years | | ✓ |
 | Compute years-of-*relevant*-experience | | ✓ |
 | Extract claimed-years figure from resume header | | ✓ |
-| Match candidate skills against JD required/nice | | ✓ |
+| Resolve a skill's equivalences (one-time, cached) | ✓ | |
+| Match candidate skills against JD required/nice (apply the knowledge) | | ✓ |
 | Score each skill by evidence (project/role/cert/listed) | | ✓ |
 | Classify a KNOWN cert (cache / official `_patterns` / heuristic) | | ✓ |
 | Classify an UNKNOWN cert (one-time enrichment, then cached) | ✓ | |
